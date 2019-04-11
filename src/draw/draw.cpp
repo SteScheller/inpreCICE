@@ -171,8 +171,8 @@ int draw::Renderer::draw(const boost::multi_array<double, 2> &data)
     // create texture from sample data
     boost::multi_array<float, 2> dataTexture(
             boost::extents[data.shape()[0]][data.shape()[1]]);
-    for (size_t y; y < data.shape()[1]; ++y)
-    for (size_t x; x < data.shape()[0]; ++x)
+    for (size_t y = 0; y < data.shape()[1]; ++y)
+    for (size_t x = 0; x < data.shape()[0]; ++x)
         dataTexture[y][x] = static_cast<float>(data[y][x]);
 
     util::texture::Texture2D sampleTex(

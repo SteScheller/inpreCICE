@@ -32,7 +32,6 @@ RELEASE_CFLAGS = -DRELEASE -O3
 
 LDFLAGS = -lGL `pkg-config --static --libs glfw3` -fopenmp
 LDFLAGS += -lboost_program_options -lboost_system -lboost_iostreams
-LDFLAGS += -lhdf5 -lhdf5_cpp
 LDFLAGS += -lfreeimage
 LDFLAGS += -lprecice
 
