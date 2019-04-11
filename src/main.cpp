@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdio>
 #include <thread>
+#include <mutex>
 
 #include <boost/multi_array.hpp>
 
@@ -18,6 +19,8 @@ namespace po = boost::program_options;
 int applyProgramOptions(int argc, char *argv[]);
 
 
+std::mutex data_mutex;
+
 void doPreciceCoupling( precice::SolverInterface& interface, 
     const double timestepSize,
     std::vector<int>& vertexIDs, 
@@ -28,17 +31,20 @@ void doPreciceCoupling( precice::SolverInterface& interface,
 {
   while(interface.isCouplingOngoing())
   {
-    interface.readBlockScalarData(
-        pressureId,
-        vertexIDs.size(),
-        vertexIDs.data(),
-        pressure.data());
-
-    interface.readBlockScalarData(
-        concentrationId,
-        vertexIDs.size(),
-        vertexIDs.data(),
-        concentration.data());
+    {
+      std::lock_guard<std::mutex> guard(data_mutex);
+      interface.readBlockScalarData(
+          pressureId,
+          vertexIDs.size(),
+          vertexIDs.data(),
+          pressure.data());
+  
+      interface.readBlockScalarData(
+          concentrationId,
+          vertexIDs.size(),
+          vertexIDs.data(),
+          concentration.data());
+    }
     
     for (size_t y=0; y < concentration.shape()[1]; ++y)
     {
@@ -130,20 +136,15 @@ int main(int argc, char *argv[])
     bool run = true;
     while(run)
     {
-/*
-                for (size_t y=0; y < concentration.shape()[1]; ++y)
-                {
-                    for (size_t x=0; x < concentration.shape()[0]; ++x)
-                        std::printf("%.3f ", concentration[y][x]);
-                    std::cout << std::endl;
-                }
-*/
-                if (EXIT_FAILURE == renderer.draw(concentration))
-                {
-                    std::cout << "Error: Renderer draw call reported a failure!"
-                        << std::endl;
-                }
-            run = renderer.processEvents();
+      {
+        std::lock_guard<std::mutex> guard(data_mutex);
+        if (EXIT_FAILURE == renderer.draw(concentration))
+        {
+          std::cout << "Error: Renderer draw call reported a failure!"
+            << std::endl;
+        }
+      }
+      run = renderer.processEvents();
     }
 
     t_precice.join();
