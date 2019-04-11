@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <array>
+#include <cstdio>
 
 #include <boost/multi_array.hpp>
 
@@ -23,11 +24,27 @@ int applyProgramOptions(int argc, char *argv[]);
  */
 int main(int argc, char *argv[])
 {
+    // initialize the renderer
+    if (EXIT_FAILURE == applyProgramOptions(argc, argv))
+    {
+        std::cout << "Error: Parsing of program options failed!" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    draw::Renderer renderer;
+    if (EXIT_SUCCESS == renderer.initialize())
+        std::cout << "Renderer was successfully initialized!" << std::endl;
+    else
+    {
+        std::cout << "Error: Renderer initialization failed!" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // setup coupling with precice
     precice::SolverInterface interface("Visus", 0, 1);
     interface.configure("precice-config.xml");
 
-    // preCICE and visualization grid specific data
-    const int dim = interface.getDimensions();
+    //const int dim = interface.getDimensions();
     const int meshId = interface.getMeshID("VisusMesh");
 
     const std::array<size_t, 2> gridDim = {10, 10};
@@ -62,43 +79,40 @@ int main(int argc, char *argv[])
     double timestepSize = interface.initialize();
     interface.initializeData();
 
-    if (EXIT_FAILURE == applyProgramOptions(argc, argv))
-    {
-        std::cout << "Error: Parsing of program options failed!" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    draw::Renderer renderer;
-
-    if (EXIT_SUCCESS == renderer.initialize())
-        std::cout << "Renderer was successfully initialized!" << std::endl;
-    else
-    {
-        std::cout << "Error: Renderer initialization failed!" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    while(renderer.processEvents())
+    // get data from coupling and draw it
+    bool run = true;
+    while(run)
     {
         while(interface.isCouplingOngoing())
         {
-            interface.readBlockScalarData(
-                    pressureId,
-                    vertexIDs.size(),
-                    vertexIDs.data(),
-                    pressure.data());
-            interface.readBlockScalarData(
-                    concentrationId,
-                    vertexIDs.size(),
-                    vertexIDs.data(),
-                    concentration.data());
-
-            if (EXIT_FAILURE == renderer.draw(concentration))
+            if (interface.isReadDataAvailable())
             {
-                std::cout << "Error: Renderer draw call reported a failure!"
-                    << std::endl;
-            }
+                interface.readBlockScalarData(
+                        pressureId,
+                        vertexIDs.size(),
+                        vertexIDs.data(),
+                        pressure.data());
+                interface.readBlockScalarData(
+                        concentrationId,
+                        vertexIDs.size(),
+                        vertexIDs.data(),
+                        concentration.data());
 
+                for (size_t y=0; y < concentration.shape()[1]; ++y)
+                {
+                    for (size_t x=0; x < concentration.shape()[0]; ++x)
+                        std::printf("%.3f ", concentration[y][x]);
+                    std::cout << std::endl;
+                }
+
+                if (EXIT_FAILURE == renderer.draw(concentration))
+                {
+                    std::cout << "Error: Renderer draw call reported a failure!"
+                        << std::endl;
+                }
+            }
+            std::cout << "Processing events..." << std::endl;
+            run = renderer.processEvents();
             interface.advance(timestepSize);
         }
     }
@@ -118,5 +132,6 @@ int main(int argc, char *argv[])
  */
 int applyProgramOptions(int argc, char *argv[])
 {
+    std::cout << "argc: " << argc << " argv[0]: " << argv[0] << std::endl;
     return EXIT_SUCCESS;
 }

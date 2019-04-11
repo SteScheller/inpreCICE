@@ -28,8 +28,8 @@ draw::Renderer::Renderer() :
     m_window(nullptr),
     m_windowDimensions{ {1280, 720} },
     m_isInitialized(false),
-    m_cmClipMin(-5.f),
-    m_cmClipMax(5.f),
+    m_cmClipMin(0.f),
+    m_cmClipMax(0.01f),
     m_viridisMap(),
     m_sampleShader(),
     m_quadShader(),
@@ -173,7 +173,7 @@ int draw::Renderer::draw(const boost::multi_array<double, 2> &data)
             boost::extents[data.shape()[0]][data.shape()[1]]);
     for (size_t y; y < data.shape()[1]; ++y)
     for (size_t x; x < data.shape()[0]; ++x)
-        dataTexture[x][y] = static_cast<float>(data[x][y]);
+        dataTexture[y][x] = static_cast<float>(data[y][x]);
 
     util::texture::Texture2D sampleTex(
             GL_R32F,
@@ -213,7 +213,7 @@ int draw::Renderer::draw(const boost::multi_array<double, 2> &data)
     ImGui::Begin("inpreCICE menu");
     {
         ImGui::DragFloatRange2(
-            "Transfer function interval", &m_cmClipMin, &m_cmClipMax, 0.02f);
+            "Transfer function interval", &m_cmClipMin, &m_cmClipMax, 0.001f);
         ImGui::Separator();
         ImGui::Checkbox("Demo Window", &m_showDemoWindow);
         ImGui::Separator();
