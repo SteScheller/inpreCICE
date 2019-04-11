@@ -7,6 +7,8 @@
 #include "shader.hpp"
 #include "../util/geometry.hpp"
 
+#include <boost/multi_array.hpp>
+
 namespace draw
 {
     /**
@@ -52,7 +54,7 @@ namespace draw
          * order to process events like resizing and closing of the drawing
          * window.
          */
-        int draw();
+        int draw(const boost::multi_array<double, 2> &data);
 
         private:
         GLFWwindow* m_window;

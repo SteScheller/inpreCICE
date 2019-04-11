@@ -158,7 +158,7 @@ bool draw::Renderer::processEvents()
         return false;
 }
 
-int draw::Renderer::draw()
+int draw::Renderer::draw(const boost::multi_array<double, 2> &data)
 {
     if (false == m_isInitialized)
     {
@@ -168,9 +168,43 @@ int draw::Renderer::draw()
         return EXIT_FAILURE;
     }
 
+    // create texture from sample data
+    boost::multi_array<float, 2> dataTexture(
+            boost::extents[data.shape()[0]][data.shape()[1]]);
+    for (size_t y; y < data.shape()[1]; ++y)
+    for (size_t x; x < data.shape()[0]; ++x)
+        dataTexture[x][y] = static_cast<float>(data[x][y]);
+
+    util::texture::Texture2D sampleTex(
+            GL_R32F,
+            GL_RED,
+            0,
+            GL_FLOAT,
+            GL_LINEAR,
+            GL_CLAMP_TO_EDGE,
+            dataTexture.shape()[0],
+            dataTexture.shape()[1],
+            static_cast<void const*>(dataTexture.data()));
+
     glViewport(0, 0, m_windowDimensions[0], m_windowDimensions[1]);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+    // draw the data
+    m_sampleShader.use();
+    m_sampleShader.setMat4("projMX", m_quadProjMx);
+    m_sampleShader.setFloat("tfMin", m_cmClipMin);
+    m_sampleShader.setFloat("tfMax", m_cmClipMax);
+
+    glActiveTexture(GL_TEXTURE0);
+    sampleTex.bind();
+    m_sampleShader.setInt("sampleTex", 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    m_viridisMap.bind();
+    m_sampleShader.setInt("tfTex", 1);
+
+    m_windowQuad.draw();
 
     // draw ImGui windows
     ImGui_ImplOpenGL3_NewFrame();
@@ -178,7 +212,10 @@ int draw::Renderer::draw()
     ImGui::NewFrame();
     ImGui::Begin("inpreCICE menu");
     {
-       ImGui::Checkbox("Demo Window", &m_showDemoWindow);
+        ImGui::DragFloatRange2(
+            "Transfer function interval", &m_cmClipMin, &m_cmClipMax, 0.02f);
+        ImGui::Separator();
+        ImGui::Checkbox("Demo Window", &m_showDemoWindow);
         ImGui::Separator();
         ImGui::Text(
             "Application average %.3f ms/frame (%.1f FPS)",
