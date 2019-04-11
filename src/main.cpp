@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <array>
 #include <cstdio>
+#include <thread>
 
 #include <boost/multi_array.hpp>
 
@@ -15,6 +16,42 @@ namespace po = boost::program_options;
 // function prototypes
 //-----------------------------------------------------------------------------
 int applyProgramOptions(int argc, char *argv[]);
+
+
+void doPreciceCoupling( precice::SolverInterface& interface, 
+    const double timestepSize,
+    std::vector<int>& vertexIDs, 
+    const int pressureId,
+    boost::multi_array<double, 2>& pressure, 
+    const int concentrationId,
+    boost::multi_array<double, 2>& concentration )
+{
+  while(interface.isCouplingOngoing())
+  {
+    interface.readBlockScalarData(
+        pressureId,
+        vertexIDs.size(),
+        vertexIDs.data(),
+        pressure.data());
+
+    interface.readBlockScalarData(
+        concentrationId,
+        vertexIDs.size(),
+        vertexIDs.data(),
+        concentration.data());
+    
+    for (size_t y=0; y < concentration.shape()[1]; ++y)
+    {
+      for (size_t x=0; x < concentration.shape()[0]; ++x)
+        std::printf("%.3f ", concentration[y][x]);
+      std::cout << std::endl;
+    }
+ 
+    interface.advance(timestepSize);
+  }
+
+
+}
 
 //-----------------------------------------------------------------------------
 // function implementations
@@ -79,42 +116,37 @@ int main(int argc, char *argv[])
     double timestepSize = interface.initialize();
     interface.initializeData();
 
+    // Spawn preCICE thread
+    std::thread t_precice( doPreciceCoupling, 
+        std::ref(interface),
+        timestepSize,
+        std::ref(vertexIDs),
+        pressureId,
+        std::ref(pressure),
+        concentrationId,
+        std::ref(concentration) );
+
     // get data from coupling and draw it
     bool run = true;
     while(run)
     {
-        while(interface.isCouplingOngoing())
-        {
-            if (interface.isReadDataAvailable())
-            {
-                interface.readBlockScalarData(
-                        pressureId,
-                        vertexIDs.size(),
-                        vertexIDs.data(),
-                        pressure.data());
-                interface.readBlockScalarData(
-                        concentrationId,
-                        vertexIDs.size(),
-                        vertexIDs.data(),
-                        concentration.data());
-
+/*
                 for (size_t y=0; y < concentration.shape()[1]; ++y)
                 {
                     for (size_t x=0; x < concentration.shape()[0]; ++x)
                         std::printf("%.3f ", concentration[y][x]);
                     std::cout << std::endl;
                 }
-
+*/
                 if (EXIT_FAILURE == renderer.draw(concentration))
                 {
                     std::cout << "Error: Renderer draw call reported a failure!"
                         << std::endl;
                 }
-            }
             run = renderer.processEvents();
-            interface.advance(timestepSize);
-        }
     }
+
+    t_precice.join();
 
     interface.finalize();
     return EXIT_SUCCESS;
