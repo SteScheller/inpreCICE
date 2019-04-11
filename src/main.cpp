@@ -111,7 +111,6 @@ int main(int argc, char *argv[])
                         << std::endl;
                 }
             }
-            std::cout << "Processing events..." << std::endl;
             run = renderer.processEvents();
             interface.advance(timestepSize);
         }
