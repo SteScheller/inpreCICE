@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <cmath>
 
+#include <boost/multi_array.hpp>
+
 #include "GL/gl3w.h"
 
 #define GLM_FORCE_SWIZZLE
@@ -216,6 +218,185 @@ namespace util
         }
 
         return bins;
+    }
+
+    template<typename T>
+    std::vector<util::geometry::Line2D> extractIsoline(
+        boost::multi_array<T, 2> domain, T isovalue)
+//    GLuint extractIsoline(const float* buffer, const int res[3],
+//        float iso_val, unsigned int &num_lines)
+    {
+        std::vector<util::geometry::Line2D> lines;
+        std::vector<float> points;
+        unsigned int node;
+        T ul, ur, ll, lr;   // node values (upper-left, upper-right, ...)
+        T p1, p2, p3, p4;   // local coordinates of asymptotes
+        float m;                // value at the middle of a cell
+        unsigned int node_sig = 0;
+
+        // calculate isolines
+        // ------------------
+        for (int j = 0; j < (domain.shape()[1] - 1); j++)
+        {
+            for (int i = 0; i < (res[0] - 1); i++)
+            {
+                // compare nodes of the square to the iso value
+                ul = buffer[j * res[0] + i];
+                ur = buffer[j * res[0] + (i + 1)];
+                ll = buffer[(j + 1) * res[0] + i];
+                lr = buffer[(j + 1) * res[0] + (i + 1)];
+
+                node_sig = 0;
+                if (ul >= isovalue) node_sig |= 1u;
+                if (ur >= isovalue) node_sig |= (1u << 1);
+                if (ll >= isovalue) node_sig |= (1u << 2);
+                if (lr >= isovalue) node_sig |= (1u << 3);
+
+                if ((node_sig == 0b1111u) || (node_sig == 0b0000u))
+                {
+                    // all nodes above or below isovalue -> no isoline
+                    continue;
+                }
+                else if ((node_sig == 0b1110u) || (node_sig == 0b0001u))
+                {
+                    // upper left corner
+
+                    // calculate local coordinates of asymptotes
+                    p1 = (isovalue - ul) / (ur - ul);
+                    p2 = (isovalue - ul) / (ll - ul);
+
+                    points.push_back(static_cast<float>(i + p1)); // x1
+                    points.push_back(static_cast<float>(j)); // y1
+                    points.push_back(static_cast<float>(i)); // x2
+                    points.push_back(static_cast<float>(j + p2)); // y2
+                }
+                else if ((node_sig == 0b1101u) || (node_sig == 0b0010u))
+                {
+                    // upper right corner
+
+                    // calculate local coordinates of asymptotes
+                    p1 = (isovalue - ul) / (ur - ul);
+                    p2 = (isovalue - ur) / (lr - ur);
+
+                    points.push_back(static_cast<float>(i + p1)); // x1
+                    points.push_back(static_cast<float>(j)); // y1
+                    points.push_back(static_cast<float>(i + 1u)); // x2
+                    points.push_back(static_cast<float>(j + p2)); // y2
+                }
+                else if ((node_sig == 0b1011u) || (node_sig == 0b0100u))
+                {
+                    // lower left corner
+
+                    // calculate local coordinates of asymptotes
+                    p1 = (isovalue - ll) / (lr - ll);
+                    p2 = (isovalue - ul) / (ll - ul);
+
+                    points.push_back(static_cast<float>(i)); // x1
+                    points.push_back(static_cast<float>(j + p2)); // y1
+                    points.push_back(static_cast<float>(i + p1)); // x2
+                    points.push_back(static_cast<float>(j + 1u)); // y2
+                }
+                else if ((node_sig == 0b0111u) || (node_sig == 0b1000u))
+                {
+                    // lower right corner
+
+                    // calculate local coordinates of asymptotes
+                    p1 = (isovalue - ll) / (lr - ll);
+                    p2 = (isovalue - ur) / (lr - ur);
+
+                    points.push_back(static_cast<float>(i + 1u)); // x1
+                    points.push_back(static_cast<float>(j + p2)); // y1
+                    points.push_back(static_cast<float>(i + p1)); // x2
+                    points.push_back(static_cast<float>(j + 1u)); // y2
+                }
+                else if ((node_sig == 0b0011u) || (node_sig == 0b1100u))
+                {
+                    // horizontal
+
+                    // calculate local coordinates of asymptotes
+                    p1 = (isovalue - ul) / (ll - ul);
+                    p2 = (isovalue - ur) / (lr - ur);
+
+                    points.push_back(static_cast<float>(i)); // x1
+                    points.push_back(static_cast<float>(j + p1)); // y1
+                    points.push_back(static_cast<float>(i + 1u)); // x2
+                    points.push_back(static_cast<float>(j + p2)); // y2
+                }
+                else if ((node_sig == 0b1010u) || (node_sig == 0b0101u))
+                {
+                    // vertical
+
+                    // calculate local coordinates of asymptotes
+                    p1 = (isovalue - ul) / (ur - ul);
+                    p2 = (isovalue - ll) / (lr - ll);
+
+                    points.push_back(static_cast<float>(i + p1)); // x1
+                    points.push_back(static_cast<float>(j)); // y1
+                    points.push_back(static_cast<float>(i + p2)); // x2
+                    points.push_back(static_cast<float>(j + 1u)); // y2
+                }
+                else if ((node_sig == 0b0110u) || (node_sig == 0b1001u))
+                {
+                    // ambigous diagonal case
+
+                    // calculate local coordinates of asymptotes
+                    p1 = (isovalue - ul) / (ur - ul);
+                    p2 = (isovalue - ul) / (ll - ul);
+                    p3 = (isovalue - ur) / (lr - ur);
+                    p4 = (isovalue - ll) / (lr - ll);
+
+                    m = bilin_interpol(ul, ur, ll, lr, 0.5f, 0.5f);
+
+                    if (((m >= isovalue) && (node_sig == 0b0110u)) ||
+                        ((m < isovalue) && (node_sig == 0b1001u)))
+                    {
+                        // lines from upper right to lower left
+                        points.push_back(static_cast<float>(i + p1)); // x1
+                        points.push_back(static_cast<float>(j)); // y1
+                        points.push_back(static_cast<float>(i)); // x2
+                        points.push_back(static_cast<float>(j + p2)); // y2
+
+                        points.push_back(static_cast<float>(i + 1u)); // x1
+                        points.push_back(static_cast<float>(j + p3)); // y1
+                        points.push_back(static_cast<float>(i + p4)); // x2
+                        points.push_back(static_cast<float>(j + 1u)); // y2
+                    }
+                    else
+                    {
+                        // lines from upper left to lower right
+                        points.push_back(static_cast<float>(i + p1)); // x1
+                        points.push_back(static_cast<float>(j)); // y1
+                        points.push_back(static_cast<float>(i + 1u)); // x2
+                        points.push_back(static_cast<float>(j + p3)); // y2
+
+                        points.push_back(static_cast<float>(i)); // x1
+                        points.push_back(static_cast<float>(j + p2)); // y1
+                        points.push_back(static_cast<float>(i + p4)); // x2
+                        points.push_back(static_cast<float>(j + 1u)); // y2
+                    }
+                }
+            }
+        }
+
+        // create vertex array object
+        // --------------------------
+        GLuint VBO, VAO;
+
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+
+        // configure the vertex array object
+        glBindVertexArray(VAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(float), points.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*) 0);
+        glEnableVertexAttribArray(0);
+
+        glBindVertexArray(0);
+        glDeleteBuffers(1, &VBO);
+
+        return VAO;
     }
 }
 

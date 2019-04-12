@@ -18,8 +18,4 @@ void main()
             vec2((value - tfMin) / (tfMax - tfMin), 0.5f)).rgb,
             1.f);
 
-    //fragColor = vec4(vec3(value), 1.f);
-
-    //fragColor = vec4(texture(tfTex, vTexCoord).rgb, 1.f);
-
 }

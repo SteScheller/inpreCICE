@@ -21,11 +21,11 @@ int applyProgramOptions(int argc, char *argv[]);
 
 std::mutex data_mutex;
 
-void doPreciceCoupling( precice::SolverInterface& interface, 
+void doPreciceCoupling( precice::SolverInterface& interface,
     const double timestepSize,
-    std::vector<int>& vertexIDs, 
+    std::vector<int>& vertexIDs,
     const int pressureId,
-    boost::multi_array<double, 2>& pressure, 
+    boost::multi_array<double, 2>& pressure,
     const int concentrationId,
     boost::multi_array<double, 2>& concentration )
 {
@@ -38,21 +38,21 @@ void doPreciceCoupling( precice::SolverInterface& interface,
           vertexIDs.size(),
           vertexIDs.data(),
           pressure.data());
-  
+
       interface.readBlockScalarData(
           concentrationId,
           vertexIDs.size(),
           vertexIDs.data(),
           concentration.data());
     }
-    
+
     for (size_t y=0; y < concentration.shape()[1]; ++y)
     {
       for (size_t x=0; x < concentration.shape()[0]; ++x)
         std::printf("%.3f ", concentration[y][x]);
       std::cout << std::endl;
     }
- 
+
     interface.advance(timestepSize);
   }
 
@@ -115,15 +115,15 @@ int main(int argc, char *argv[])
     const int concentrationId = interface.getDataID("Concentration", meshId);
 
     boost::multi_array<double, 2> pressure(
-            boost::extents[gridDim[0]][gridDim[1]]);
+            boost::extents[gridDim[1]][gridDim[0]]);
     boost::multi_array<double, 2> concentration(
-            boost::extents[gridDim[0]][gridDim[1]]);
+            boost::extents[gridDim[1]][gridDim[0]]);
 
     double timestepSize = interface.initialize();
     interface.initializeData();
 
     // Spawn preCICE thread
-    std::thread t_precice( doPreciceCoupling, 
+    std::thread t_precice( doPreciceCoupling,
         std::ref(interface),
         timestepSize,
         std::ref(vertexIDs),
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 }
 
 /**
- * \brief Takes in input arguments, parses and loads the specified data
+ * \brief takes in input arguments, parses and loads the specified data
  *
  * \param   argc number of input arguments
  * \param   argv array of char pointers to the input arguments
@@ -167,3 +167,4 @@ int applyProgramOptions(int argc, char *argv[])
     std::cout << "argc: " << argc << " argv[0]: " << argv[0] << std::endl;
     return EXIT_SUCCESS;
 }
+

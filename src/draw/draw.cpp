@@ -32,7 +32,6 @@ draw::Renderer::Renderer() :
     m_cmClipMax(0.01f),
     m_viridisMap(),
     m_sampleShader(),
-    m_quadShader(),
     m_windowQuad(false),
     m_quadProjMx(glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f)),
     m_showDemoWindow(false)
@@ -90,8 +89,6 @@ int draw::Renderer::initialize()
     //-------------------------------------------------------------------------
     m_sampleShader = Shader(
             "src/draw/shader/sample.vert", "src/draw/shader/sample.frag");
-    m_quadShader = Shader(
-            "src/draw/shader/quad.vert", "src/draw/shader/quad.frag");
 
     // ------------------------------------------------------------------------
     // geometry
@@ -303,9 +300,6 @@ void draw::Renderer::reloadShaders()
     m_sampleShader = Shader(
             "src/draw/shader/sample.vert",
             "src/draw/shader/sample.frag");
-    m_quadShader = Shader(
-            "src/draw/shader/quad.vert",
-            "src/draw/shader/quad.frag");
 }
 
 // from imgui_demo.cpp

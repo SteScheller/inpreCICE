@@ -69,7 +69,6 @@ namespace draw
         util::FramebufferObject m_framebuffer;
         util::texture::Texture2D m_viridisMap;
         Shader m_sampleShader;
-        Shader m_quadShader;
         util::geometry::Quad m_windowQuad;
         glm::mat4 m_quadProjMx;
 
