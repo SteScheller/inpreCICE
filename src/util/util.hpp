@@ -259,6 +259,18 @@ namespace util
         return bins;
     }
 
+    /**
+     * /brief creates isoline geometry for a given 2D field
+     *
+     * /param domain    field data on rectangular 2D domain
+     * /param isovalue  threshold for which to extract the isolines
+     *
+     * /return A vector of lines that form the respective isolines
+     *
+     * Note: The position of the lines is derivated from the shape of the
+     *       field and results in position from
+     *       [0, width - 1] x [0, height - 1].
+     */
     template<typename T>
     std::vector<util::geometry::Line2D> extractIsolines(
         boost::multi_array<T, 2> domain, T isovalue)
@@ -270,8 +282,6 @@ namespace util
         T m;                // value at the middle of a cell
         unsigned int node_sig = 0;
 
-        // calculate isolines
-        // ------------------
         for (size_t j = 0; j < (domain.shape()[1] - 1); j++)
         {
             for (size_t i = 0; i < (domain.shape()[0] - 1); i++)
