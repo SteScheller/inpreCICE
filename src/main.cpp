@@ -2,6 +2,8 @@
 #include <cstdlib>
 #include <array>
 #include <cstdio>
+#include <cmath>
+#include <iostream>
 #include <thread>
 #include <mutex>
 
@@ -19,44 +21,89 @@ namespace po = boost::program_options;
 int applyProgramOptions(int argc, char *argv[]);
 
 
-std::mutex data_mutex;
+std::mutex static data_mutex;
 
-void doPreciceCoupling( precice::SolverInterface& interface,
-    const double timestepSize,
-    std::vector<int>& vertexIDs,
-    const int pressureId,
-    boost::multi_array<double, 2>& pressure,
-    const int concentrationId,
-    boost::multi_array<double, 2>& concentration )
+void doPreciceCoupling( const std::array<size_t, 2>& gridDim,
+                        boost::multi_array<double, 2>& pressure,
+                        boost::multi_array<double, 2>& concentration )
 {
-  while(interface.isCouplingOngoing())
-  {
+  // setup coupling with precice
+  precice::SolverInterface interface("Visus", 0, 1);
+  interface.configure("precice-config.xml");
+
+  //const int dim = interface.getDimensions();
+  const int meshId = interface.getMeshID("VisusMesh");
+
+  const size_t numPoints = gridDim[0] * gridDim[1];
+  std::vector<int> vertexIDs(numPoints, 0);
+  boost::multi_array<double, 2> gridPoints(
+        boost::extents[numPoints][3]);
+
+  std::array<double, 2> cellDim =
+  {   100.0 / static_cast<double>(gridDim[0]),
+      100.0 / static_cast<double>(gridDim[1])};
+
+  for (size_t y = 0; y < gridDim[1]; ++y)
+    for (size_t x = 0; x < gridDim[0]; ++x)
     {
-      std::lock_guard<std::mutex> guard(data_mutex);
-      interface.readBlockScalarData(
+      size_t idx = y * gridDim[0] + x;
+      gridPoints[idx][0] = x * cellDim[0] + 0.5 * cellDim[0];
+      gridPoints[idx][1] = y * cellDim[1] + 0.5 * cellDim[1];
+      gridPoints[idx][2] = -0.6 * gridPoints[idx][0] + 80.0;
+    }
+
+  interface.setMeshVertices(
+        meshId, numPoints, gridPoints.data(), vertexIDs.data());
+
+  const int pressureId = interface.getDataID("Pressure", meshId);
+  const int concentrationId = interface.getDataID("Concentration", meshId);
+
+  double timestepSize = interface.initialize();
+  interface.initializeData();
+
+  if ( interface.isReadDataAvailable() )
+  {
+    std::lock_guard<std::mutex> guard(data_mutex);
+    interface.readBlockScalarData( pressureId,
+                                   vertexIDs.size(),
+                                   vertexIDs.data(),
+                                   pressure.data());
+  }
+
+  // Pressure is only read once
+  {
+    std::lock_guard<std::mutex> guard(data_mutex);
+    interface.readBlockScalarData(
           pressureId,
           vertexIDs.size(),
           vertexIDs.data(),
           pressure.data());
+  }
 
+  do
+  {
+    {
+      std::lock_guard<std::mutex> guard(data_mutex);
+  
       interface.readBlockScalarData(
           concentrationId,
           vertexIDs.size(),
           vertexIDs.data(),
           concentration.data());
     }
-
+    
     for (size_t y=0; y < concentration.shape()[1]; ++y)
     {
       for (size_t x=0; x < concentration.shape()[0]; ++x)
         std::printf("%.3f ", concentration[y][x]);
       std::cout << std::endl;
     }
+ 
+    const double preciceDt = interface.advance(timestepSize);
+    timestepSize = std::max( timestepSize, preciceDt );
+  } while(interface.isCouplingOngoing());
 
-    interface.advance(timestepSize);
-  }
-
-
+  interface.finalize();
 }
 
 //-----------------------------------------------------------------------------
@@ -83,54 +130,18 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    // setup coupling with precice
-    precice::SolverInterface interface("Visus", 0, 1);
-    interface.configure("precice-config.xml");
-
-    //const int dim = interface.getDimensions();
-    const int meshId = interface.getMeshID("VisusMesh");
-
     const std::array<size_t, 2> gridDim = {10, 10};
-    const size_t numPoints = gridDim[0] * gridDim[1];
-    std::vector<int> vertexIDs(numPoints, 0);
-    boost::multi_array<double, 2> gridPoints(
-            boost::extents[numPoints][3]);
-
-    std::array<double, 2> cellDim =
-        {   100.0 / static_cast<double>(gridDim[0]),
-            100.0 / static_cast<double>(gridDim[1])};
-
-    for (size_t y = 0; y < gridDim[1]; ++y)
-    for (size_t x = 0; x < gridDim[0]; ++x)
-    {
-        size_t idx = y * gridDim[0] + x;
-        gridPoints[idx][0] = x * cellDim[0] + 0.5 * cellDim[0];
-        gridPoints[idx][1] = y * cellDim[1] + 0.5 * cellDim[1];
-        gridPoints[idx][2] = -0.6 * gridPoints[idx][0] + 80.0;
-    }
-    interface.setMeshVertices(
-            meshId, numPoints, gridPoints.data(), vertexIDs.data());
-
-    const int pressureId = interface.getDataID("Pressure", meshId);
-    const int concentrationId = interface.getDataID("Concentration", meshId);
-
     boost::multi_array<double, 2> pressure(
-            boost::extents[gridDim[1]][gridDim[0]]);
+            boost::extents[gridDim[0]][gridDim[1]]);
     boost::multi_array<double, 2> concentration(
-            boost::extents[gridDim[1]][gridDim[0]]);
+            boost::extents[gridDim[0]][gridDim[1]]);
 
-    double timestepSize = interface.initialize();
-    interface.initializeData();
 
     // Spawn preCICE thread
     std::thread t_precice( doPreciceCoupling,
-        std::ref(interface),
-        timestepSize,
-        std::ref(vertexIDs),
-        pressureId,
-        std::ref(pressure),
-        concentrationId,
-        std::ref(concentration) );
+                           std::ref(gridDim),
+                           std::ref(pressure),
+                           std::ref(concentration) );
 
     // get data from coupling and draw it
     bool run = true;
@@ -149,12 +160,11 @@ int main(int argc, char *argv[])
 
     t_precice.join();
 
-    interface.finalize();
     return EXIT_SUCCESS;
 }
 
 /**
- * \brief takes in input arguments, parses and loads the specified data
+ * \brief Takes in input arguments, parses and loads the specified data
  *
  * \param   argc number of input arguments
  * \param   argv array of char pointers to the input arguments
@@ -167,4 +177,3 @@ int applyProgramOptions(int argc, char *argv[])
     std::cout << "argc: " << argc << " argv[0]: " << argv[0] << std::endl;
     return EXIT_SUCCESS;
 }
-
