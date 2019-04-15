@@ -5,7 +5,7 @@
 #include <GLFW/glfw3.h>
 
 #include "shader.hpp"
-#include "../util/geometry.hpp"
+#include "../util/util.hpp"
 
 #include <boost/multi_array.hpp>
 
@@ -69,6 +69,7 @@ namespace draw
         util::FramebufferObject m_framebuffer;
         util::texture::Texture2D m_viridisMap;
         Shader m_sampleShader;
+        Shader m_isolineShader;
         util::geometry::Quad m_windowQuad;
         glm::mat4 m_quadProjMx;
 

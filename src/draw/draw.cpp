@@ -32,6 +32,7 @@ draw::Renderer::Renderer() :
     m_cmClipMax(0.01f),
     m_viridisMap(),
     m_sampleShader(),
+    m_isolineShader(),
     m_windowQuad(false),
     m_quadProjMx(glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f)),
     m_showDemoWindow(false)
@@ -78,6 +79,7 @@ int draw::Renderer::initialize()
     if (EXIT_SUCCESS != ret) return ret;
 
     glEnable(GL_CULL_FACE);
+    glEnable(GL_LINE_SMOOTH);
     glCullFace(GL_BACK);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -89,6 +91,8 @@ int draw::Renderer::initialize()
     //-------------------------------------------------------------------------
     m_sampleShader = Shader(
             "src/draw/shader/sample.vert", "src/draw/shader/sample.frag");
+    m_isolineShader = Shader(
+            "src/draw/shader/isolines.vert", "src/draw/shader/isolines.frag");
 
     // ------------------------------------------------------------------------
     // geometry
@@ -168,8 +172,8 @@ int draw::Renderer::draw(const boost::multi_array<double, 2> &data)
     // create texture from sample data
     boost::multi_array<float, 2> dataTexture(
             boost::extents[data.shape()[0]][data.shape()[1]]);
-    for (size_t y = 0; y < data.shape()[1]; ++y)
-    for (size_t x = 0; x < data.shape()[0]; ++x)
+    for (size_t y = 0; y < data.shape()[0]; ++y)
+    for (size_t x = 0; x < data.shape()[1]; ++x)
         dataTexture[y][x] = static_cast<float>(data[y][x]);
 
     util::texture::Texture2D sampleTex(
@@ -179,8 +183,8 @@ int draw::Renderer::draw(const boost::multi_array<double, 2> &data)
             GL_FLOAT,
             GL_LINEAR,
             GL_CLAMP_TO_EDGE,
-            dataTexture.shape()[0],
             dataTexture.shape()[1],
+            dataTexture.shape()[0],
             static_cast<void const*>(dataTexture.data()));
 
     glViewport(0, 0, m_windowDimensions[0], m_windowDimensions[1]);
@@ -202,6 +206,31 @@ int draw::Renderer::draw(const boost::multi_array<double, 2> &data)
     m_sampleShader.setInt("tfTex", 1);
 
     m_windowQuad.draw();
+
+    glm::mat3 pvmMx = glm::transpose(glm::mat3(
+            2.f / (dataTexture.shape()[0] - 1.f), 0.f, -1.0f,
+            0.f, 2.f / (dataTexture.shape()[1] -1.f), -1.0f,
+            0.f, 0.f, 1.f));
+
+    m_isolineShader.use();
+    m_isolineShader.setMat3("pvmMx", pvmMx);
+    for (float isovalue = 1e-3f; isovalue < 1e-2f; isovalue += 5e-4f)
+    {
+        std::vector<util::geometry::Line2D> isolines =
+            util::extractIsolines(dataTexture, isovalue);
+        glm::vec4 color = glm::vec4(
+                glm::vec3(
+                    1.f,
+                    1.f - isovalue * 100.f,
+                    isovalue * 100.f),
+                1.f);
+        m_isolineShader.setVec4("linecolor", color);
+        printOpenGLError();
+
+        for (auto &line : isolines)
+            line.draw();
+        printOpenGLError();
+    }
 
     // draw ImGui windows
     ImGui_ImplOpenGL3_NewFrame();
@@ -300,6 +329,9 @@ void draw::Renderer::reloadShaders()
     m_sampleShader = Shader(
             "src/draw/shader/sample.vert",
             "src/draw/shader/sample.frag");
+    m_isolineShader = Shader(
+            "src/draw/shader/isolines.vert",
+            "src/draw/shader/isolines.frag");
 }
 
 // from imgui_demo.cpp
