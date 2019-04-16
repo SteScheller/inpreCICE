@@ -37,7 +37,7 @@ void InpreciceAdapter::setMeshName(const std::string &meshName)
   meshID_ = interface_->getMeshID( meshName );
 }
 
-void InpreciceAdapter::setVisualizationGridDimension( const gridDimension_t& gridDimension)
+void InpreciceAdapter::setVisualizationMesh( const gridDimension_t& gridDimension )
 {
   gridDimension_ = gridDimension;
   const size_t numPoints = gridDimension[0] * gridDimension[1];

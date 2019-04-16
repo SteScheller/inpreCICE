@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     interface.setMeshName( "VisusMesh" );
 
     const std::array<size_t, 2> gridDim = {10, 10};
-    interface.setVisualizationGridDimension( gridDim );
+    interface.setVisualizationMesh( gridDim );
 
     interface.initialize();
 

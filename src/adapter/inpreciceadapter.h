@@ -57,7 +57,7 @@ class InpreciceAdapter
 
     void configure( const std::string& configurationFileName );
     void setMeshName( const std::string& meshName );
-    void setVisualizationGridDimension( const gridDimension_t& gridDimension );
+    void setVisualizationMesh( const gridDimension_t& gridDimension );
     void initialize();
 
     void runCouplingThreaded();
