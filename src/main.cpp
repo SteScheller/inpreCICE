@@ -4,107 +4,19 @@
 #include <cstdio>
 #include <cmath>
 #include <iostream>
-#include <thread>
-#include <mutex>
 
 #include <boost/multi_array.hpp>
 
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 
-#include <precice/SolverInterface.hpp>
 #include "draw/draw.hpp"
+#include "adapter/inpreciceadapter.h"
 
 //-----------------------------------------------------------------------------
 // function prototypes
 //-----------------------------------------------------------------------------
 int applyProgramOptions(int argc, char *argv[]);
-
-
-std::mutex static data_mutex;
-
-void doPreciceCoupling( const std::array<size_t, 2>& gridDim,
-                        boost::multi_array<double, 2>& pressure,
-                        boost::multi_array<double, 2>& concentration )
-{
-  // setup coupling with precice
-  precice::SolverInterface interface("Visus", 0, 1);
-  interface.configure("precice-config.xml");
-
-  //const int dim = interface.getDimensions();
-  const int meshId = interface.getMeshID("VisusMesh");
-
-  const size_t numPoints = gridDim[0] * gridDim[1];
-  std::vector<int> vertexIDs(numPoints, 0);
-  boost::multi_array<double, 2> gridPoints(
-        boost::extents[numPoints][3]);
-
-  std::array<double, 2> cellDim =
-  {   100.0 / static_cast<double>(gridDim[0]),
-      100.0 / static_cast<double>(gridDim[1])};
-
-  for (size_t y = 0; y < gridDim[1]; ++y)
-    for (size_t x = 0; x < gridDim[0]; ++x)
-    {
-      size_t idx = y * gridDim[0] + x;
-      gridPoints[idx][0] = x * cellDim[0] + 0.5 * cellDim[0];
-      gridPoints[idx][1] = y * cellDim[1] + 0.5 * cellDim[1];
-      gridPoints[idx][2] = -0.6 * gridPoints[idx][0] + 80.0;
-    }
-
-  interface.setMeshVertices(
-        meshId, numPoints, gridPoints.data(), vertexIDs.data());
-
-  const int pressureId = interface.getDataID("Pressure", meshId);
-  const int concentrationId = interface.getDataID("Concentration", meshId);
-
-  double timestepSize = interface.initialize();
-  interface.initializeData();
-
-  if ( interface.isReadDataAvailable() )
-  {
-    std::lock_guard<std::mutex> guard(data_mutex);
-    interface.readBlockScalarData( pressureId,
-                                   vertexIDs.size(),
-                                   vertexIDs.data(),
-                                   pressure.data());
-  }
-
-  // Pressure is only read once
-  {
-    std::lock_guard<std::mutex> guard(data_mutex);
-    interface.readBlockScalarData(
-          pressureId,
-          vertexIDs.size(),
-          vertexIDs.data(),
-          pressure.data());
-  }
-
-  do
-  {
-    {
-      std::lock_guard<std::mutex> guard(data_mutex);
-  
-      interface.readBlockScalarData(
-          concentrationId,
-          vertexIDs.size(),
-          vertexIDs.data(),
-          concentration.data());
-    }
-    
-    for (size_t y=0; y < concentration.shape()[1]; ++y)
-    {
-      for (size_t x=0; x < concentration.shape()[0]; ++x)
-        std::printf("%.3f ", concentration[y][x]);
-      std::cout << std::endl;
-    }
- 
-    const double preciceDt = interface.advance(timestepSize);
-    timestepSize = std::max( timestepSize, preciceDt );
-  } while(interface.isCouplingOngoing());
-
-  interface.finalize();
-}
 
 //-----------------------------------------------------------------------------
 // function implementations
@@ -130,26 +42,25 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    InpreciceAdapter interface( "Visus", 0, 1 );
+    interface.configure("precice-config.xml");
+    interface.setMeshName( "VisusMesh" );
+
     const std::array<size_t, 2> gridDim = {10, 10};
-    boost::multi_array<double, 2> pressure(
-            boost::extents[gridDim[0]][gridDim[1]]);
-    boost::multi_array<double, 2> concentration(
-            boost::extents[gridDim[0]][gridDim[1]]);
+    interface.setVisualizationGridDimension( gridDim );
 
+    interface.initialize();
 
-    // Spawn preCICE thread
-    std::thread t_precice( doPreciceCoupling,
-                           std::ref(gridDim),
-                           std::ref(pressure),
-                           std::ref(concentration) );
+    //Run precice (runs a thread)
+    interface.runCouplingThreaded();
+
 
     // get data from coupling and draw it
     bool run = true;
     while(run)
     {
       {
-        std::lock_guard<std::mutex> guard(data_mutex);
-        if (EXIT_FAILURE == renderer.draw(concentration))
+        if (EXIT_FAILURE == renderer.draw(interface.getConcentrationVector()))
         {
           std::cout << "Error: Renderer draw call reported a failure!"
             << std::endl;
@@ -158,7 +69,7 @@ int main(int argc, char *argv[])
       run = renderer.processEvents();
     }
 
-    t_precice.join();
+    interface.finalize();
 
     return EXIT_SUCCESS;
 }

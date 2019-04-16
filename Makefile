@@ -10,6 +10,7 @@ SOURCES += lib/imgui/imgui_impl_glfw.cpp lib/imgui/imgui_impl_opengl3.cpp
 SOURCES += lib/imgui/imgui.cpp lib/imgui/imgui_demo.cpp
 SOURCES += lib/imgui/imgui_draw.cpp lib/imgui/imgui_widgets.cpp
 SOURCES += lib/gl3w/GL/gl3w.c
+SOURCES += src/adapter/inpreciceadapter.cpp
 
 OBJS = $(addsuffix .o, $(basename $(SOURCES)))
 
@@ -37,7 +38,7 @@ LDFLAGS += -lprecice
 
 .PHONY: clean
 
-defaul: debug
+default: debug
 
 debug: CADDITIONALFLAGS = $(DEBUG_CFLAGS)
 debug: CXXADDITIONALFLAGS = $(DEBUG_CXXFLAGS)
