@@ -6,6 +6,9 @@
 #include <iostream>
 #include <thread>
 
+#include <json.hpp>
+using json = nlohmann::json;
+
 InpreciceAdapter::InpreciceAdapter(const size_t solverProcessRank,
                                         const size_t solverNumberOfProcesses) :
   InpreciceAdapter( "Visus", solverProcessRank, solverNumberOfProcesses )

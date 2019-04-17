@@ -11,7 +11,7 @@ INCLUDES = [
         'include',
         'lib/gl3w',
         'lib/imgui',
-        'lib/gnuplot-iostream',
+        'lib/nlohmann',
         'src/draw',
         'src/loader',
         'src/util']

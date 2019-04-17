@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cmath>
 #include <iostream>
+#include <string>
 
 #include <boost/multi_array.hpp>
 
@@ -16,7 +17,7 @@ namespace po = boost::program_options;
 //-----------------------------------------------------------------------------
 // function prototypes
 //-----------------------------------------------------------------------------
-int applyProgramOptions(int argc, char *argv[]);
+int applyProgramOptions(int argc, char *argv[], std::string &meshFile);
 
 //-----------------------------------------------------------------------------
 // function implementations
@@ -26,8 +27,10 @@ int applyProgramOptions(int argc, char *argv[]);
  */
 int main(int argc, char *argv[])
 {
+    std::string meshFile("visus-mesh.json");
+
     // initialize the renderer
-    if (EXIT_FAILURE == applyProgramOptions(argc, argv))
+    if (EXIT_FAILURE == applyProgramOptions(argc, argv, meshFile))
     {
         std::cout << "Error: Parsing of program options failed!" << std::endl;
         return EXIT_FAILURE;
@@ -46,8 +49,7 @@ int main(int argc, char *argv[])
     interface.configure("precice-config.xml");
     interface.setMeshName( "VisusMesh" );
 
-    const std::array<size_t, 2> gridDim = {10, 10};
-    interface.setVisualizationMesh( gridDim );
+    interface.setVisualizationMesh(meshFile);
 
     interface.initialize();
 
@@ -77,14 +79,44 @@ int main(int argc, char *argv[])
 /**
  * \brief Takes in input arguments, parses and loads the specified data
  *
- * \param   argc number of input arguments
- * \param   argv array of char pointers to the input arguments
+ * \param argc  number of input arguments
+ * \param argv  array of char pointers to the input arguments
+ * \param mesh  ref to variable containing the path of the visualization mesh
  *
  * \return  EXIT_SUCCESS or EXIT_FAILURE depending on success of parsing the
  *          program arguments
  */
-int applyProgramOptions(int argc, char *argv[])
+int applyProgramOptions(int argc, char *argv[], std::string& meshFile)
 {
-    std::cout << "argc: " << argc << " argv[0]: " << argv[0] << std::endl;
-    return EXIT_SUCCESS;
+    int ret = EXIT_SUCCESS;
+
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("help,h", "produce help message")
+        ("mesh,m", po::value<std::string>(), "json file containing the visualization mesh")
+    ;
+
+    try
+    {
+        po::variables_map vm;
+        po::store(po::parse_command_line(argc, argv, desc), vm);
+        po::notify(vm);
+
+        if (vm.count("help"))
+        {
+            std::cout << desc << std::endl;
+            exit(EXIT_SUCCESS);
+        }
+
+        if (vm.count("mesh") > 0)
+            meshFile = vm["mesh"].as<std::string>();
+    }
+    catch(std::exception &e)
+    {
+        std::cout << "Invalid program options!" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    return ret;
 }
+
