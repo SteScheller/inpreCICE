@@ -15,7 +15,7 @@ SOURCES += src/adapter/inpreciceadapter.cpp
 OBJS = $(addsuffix .o, $(basename $(SOURCES)))
 
 INCLUDE = -I./src -I./src/draw
-INCLUDE += -I./include -I./lib/gl3w -I./lib/imgui -I./lib/gnuplot-iostream
+INCLUDE += -I./include -I./lib/gl3w -I./lib/imgui -I./lib/nlohmann
 
 CC = cc
 CXX = g++
