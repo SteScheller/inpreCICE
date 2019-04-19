@@ -27,7 +27,7 @@ int applyProgramOptions(int argc, char *argv[], std::string &meshFile);
  */
 int main(int argc, char *argv[])
 {
-    std::string meshFile("visus-mesh.json");
+    std::string meshFile("./visus-mesh.json");
 
     // initialize the renderer
     if (EXIT_FAILURE == applyProgramOptions(argc, argv, meshFile))

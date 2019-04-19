@@ -4,7 +4,9 @@
 
 #include <cassert>
 #include <iostream>
+#include <fstream>
 #include <thread>
+#include <string>
 
 #include <json.hpp>
 using json = nlohmann::json;
@@ -40,27 +42,29 @@ void InpreciceAdapter::setMeshName(const std::string &meshName)
   meshID_ = interface_->getMeshID( meshName );
 }
 
-void InpreciceAdapter::setVisualizationMesh( const gridDimension_t& gridDimension )
+void InpreciceAdapter::setVisualizationMesh( const std::string& meshFilePath )
 {
-  gridDimension_ = gridDimension;
-  const size_t numPoints = gridDimension[0] * gridDimension[1];
+  std::array<size_t, 2> gridDimension({0, 0});
+
+  std::ifstream fs;
+  fs.open(meshFilePath.c_str(), std::ofstream::in);
+  json conf;
+  fs >> conf;
+
+  gridDimension_ = conf["gridDimensions"].get<gridDimension_t>();
+  const size_t numPoints = gridDimension_[0] * gridDimension_[1];
   vertexIDs_.resize(numPoints);
-
-  boost::multi_array<double, 2> gridPoints(
-        boost::extents[numPoints][3]);
-
-  std::array<double, 2> cellDim =
-  {   100.0 / static_cast<double>(gridDimension[0]),
-      100.0 / static_cast<double>(gridDimension[1])};
-
-  for (size_t y = 0; y < gridDimension[1]; ++y)
-    for (size_t x = 0; x < gridDimension[0]; ++x)
-    {
-      size_t idx = y * gridDimension[0] + x;
-      gridPoints[idx][0] = x * cellDim[0] + 0.5 * cellDim[0];
-      gridPoints[idx][1] = y * cellDim[1] + 0.5 * cellDim[1];
-      gridPoints[idx][2] = -0.6 * gridPoints[idx][0] + 80.0;
-    }
+  boost::multi_array<double, 2> gridPoints(boost::extents[numPoints][3]);
+  for (size_t idx = 0; idx < numPoints; ++idx)
+  {
+    gridPoints[idx][0] =
+        conf["vertices"][idx]["pos"].get<std::array<float, 3>>()[0];
+    gridPoints[idx][1] =
+        conf["vertices"][idx]["pos"].get<std::array<float, 3>>()[1];
+    gridPoints[idx][2] =
+        conf["vertices"][idx]["pos"].get<std::array<float, 3>>()[2];
+  }
+  fs.close();
 
   interface_->setMeshVertices(
         meshID_, numPoints, gridPoints.data(), vertexIDs_.data());
