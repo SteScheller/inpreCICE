@@ -36,10 +36,22 @@ LDFLAGS += -lboost_program_options -lboost_system -lboost_iostreams
 LDFLAGS += -lfreeimage
 LDFLAGS += -lprecice
 
-.PHONY: clean
+.PHONY: clean start all
 
 default: debug
 
+all:
+	@echo Building debug version...
+	@echo
+	@make debug
+	@echo
+	@echo
+	@echo
+	@echo --------------------------------------------------------------------------------
+	@echo Building release version...
+	@echo
+	@make release
+	
 debug: CADDITIONALFLAGS = $(DEBUG_CFLAGS)
 debug: CXXADDITIONALFLAGS = $(DEBUG_CXXFLAGS)
 debug: TARGET_DIR = $(BUILD_DIR)/debug
