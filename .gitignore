@@ -31,11 +31,16 @@
 *.out
 *.app
 
-# Misc
+# build directory and link to binaries
 build/*
-imgui.ini
 dinpreCICE
 inpreCICE
+
+# editor stuff
+my_session.vim
+
+# Misc
 precice-Visus-events.json
 precice-config.xml
-scripts/visus-mesh.json
+imgui.ini
+
