@@ -6,50 +6,66 @@ import sys
 
 DIR_OF_THIS_SCRIPT = os.path.abspath(os.path.dirname( __file__ ))
 
-INCLUDES = [
-        'src',
-        'include',
-        'lib/gl3w',
-        'lib/imgui',
-        'lib/nlohmann',
-        'src/draw',
-        'src/loader',
-        'src/util']
-FLAGS = [
-        '-std=c++14',
+CPP_EXT = {'.cpp', '.cc', '.c++', '.cp', '.cxx'}
+C_EXT = {'.c', '.h'}
+
+INCLUDE = [
+        './src',
+        './src/draw',
+        './include',
+        './lib/gl3w',
+        './lib/imgui',
+        './lib/nlohmann']
+
+CPP_FLAGS = ['-std=c++14']
+C_FLAGS = ['-std=c11']
+COMMON_FLAGS = [
+        '-fopenmp',
         '`pkg-config --cflags glfw3`',
-        '-Wall', '-Wextra']
+        '-Wall',
+        '-Wextra',
+        '-DDEBUG',
+        '-g',
+        '-Og']
+
 LIBS = [
         '-lGL',
         '`pkg-config --static --libs glfw3`',
-        '-lboost_program_options', '-lboost_system', '-lboost_iostreams',
-        '-lhdf5',
-        '-lhdf5_cpp',
-        '-lfreeimage']
+        '-fopenmp',
+        '-lboost_program_options',
+        '-lboost_iostreams',
+        '-lfreeimage',
+        '-lprecice']
 
-# for debugging
+# log output for debugging
 log = None
+if log is not None and os.path.isfile(log):
+    os.remove(log)
 
 def FlagsForFile(filename, **kwargs):
-    includes = []
-    for item in INCLUDES:
-        includes.append('-I' + os.path.join(DIR_OF_THIS_SCRIPT, item))
+    includes = ['-I' + os.path.join(DIR_OF_THIS_SCRIPT, item) for \
+            item in INCLUDE]
 
+    flags = COMMON_FLAGS
+    if os.path.splitext(filename)[1].lower() in CPP_EXT:
+        flags.extend(CPP_FLAGS)
+    else:
+        flags.extend(C_FLAGS)
 
     if log is not None:
         orig_stdout = sys.stdout
-        with open(log, 'w') as f:
+        with open(log, 'a') as f:
             sys.stdout = f
+            print(filename)
             print(kwargs)
             print(kwargs['client_data'])
             for item in kwargs['client_data']:
                 print(item, kwargs['client_data'][item])
-            print(filename)
+            print(flags)
             print(includes)
+            print()
         sys.stdout = orig_stdout
 
-    ctype = []
-
-    return { 'flags': FLAGS + ctype + includes + LIBS }
+    return {'flags': flags + includes + LIBS }
 
 
