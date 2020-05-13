@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+#include <functional>
 
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
@@ -139,6 +140,7 @@ int draw::Renderer::initialize()
     return ret;
 }
 
+//-----------------------------------------------------------------------------
 bool draw::Renderer::processEvents()
 {
     if (false == m_isInitialized)
@@ -159,7 +161,10 @@ bool draw::Renderer::processEvents()
         return false;
 }
 
-int draw::Renderer::draw(const boost::multi_array<double, 2> &data)
+//-----------------------------------------------------------------------------
+int draw::Renderer::drawSingleFracture(
+        const boost::multi_array<double, 2> &data,
+        float isovalueInterval)
 {
     if (false == m_isInitialized)
     {
@@ -214,7 +219,10 @@ int draw::Renderer::draw(const boost::multi_array<double, 2> &data)
 
     m_isolineShader.use();
     m_isolineShader.setMat3("pvmMx", pvmMx);
-    for (float isovalue = 1e-3f; isovalue < 1e-2f; isovalue += 1e-4f)
+    for (
+            float isovalue = 1e-3f;
+            isovalue < 1e-2f;
+            isovalue += isovalueInterval)
     {
         std::vector<util::geometry::Line2D> isolines =
             util::extractIsolines(dataTexture, isovalue);
@@ -262,6 +270,121 @@ int draw::Renderer::draw(const boost::multi_array<double, 2> &data)
     else
         return EXIT_SUCCESS;
 }
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+int draw::Renderer::drawFractureNetwork(
+        const std::array<
+            std::reference_wrapper<const boost::multi_array<double, 2>>,
+            9> &dataArray,
+        float isovalueInterval)
+{
+    if (false == m_isInitialized)
+    {
+        std::cerr << "Error: Renderer::initialize() must be called "
+            "successfully before Renderer::draw can be used!" <<
+            std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // create texture from sample data
+    const boost::multi_array<double, 2>& data = dataArray[0];
+    boost::multi_array<float, 2> dataTexture(
+            boost::extents[data.shape()[0]][data.shape()[1]]);
+    for (size_t y = 0; y < data.shape()[0]; ++y)
+    for (size_t x = 0; x < data.shape()[1]; ++x)
+        dataTexture[y][x] = static_cast<float>(data[y][x]);
+
+    util::texture::Texture2D sampleTex(
+            GL_R32F,
+            GL_RED,
+            0,
+            GL_FLOAT,
+            GL_LINEAR,
+            GL_CLAMP_TO_EDGE,
+            dataTexture.shape()[1],
+            dataTexture.shape()[0],
+            static_cast<void const*>(dataTexture.data()));
+
+    glViewport(0, 0, m_windowDimensions[0], m_windowDimensions[1]);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+    // draw the data
+    m_sampleShader.use();
+    m_sampleShader.setMat4("projMX", m_quadProjMx);
+    m_sampleShader.setFloat("tfMin", m_cmClipMin);
+    m_sampleShader.setFloat("tfMax", m_cmClipMax);
+
+    glActiveTexture(GL_TEXTURE0);
+    sampleTex.bind();
+    m_sampleShader.setInt("sampleTex", 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    m_viridisMap.bind();
+    m_sampleShader.setInt("tfTex", 1);
+
+    m_windowQuad.draw();
+
+    glm::mat3 pvmMx = glm::transpose(glm::mat3(
+            2.f / (dataTexture.shape()[0] - 1.f), 0.f, -1.0f,
+            0.f, 2.f / (dataTexture.shape()[1] -1.f), -1.0f,
+            0.f, 0.f, 1.f));
+
+    m_isolineShader.use();
+    m_isolineShader.setMat3("pvmMx", pvmMx);
+    for (
+            float isovalue = 1e-3f;
+            isovalue < 1e-2f;
+            isovalue += isovalueInterval)
+    {
+        std::vector<util::geometry::Line2D> isolines =
+            util::extractIsolines(dataTexture, isovalue);
+        glm::vec4 color = glm::vec4(
+                glm::vec3(
+                    1.f,
+                    1.f - isovalue * 100.f,
+                    isovalue * 100.f),
+                1.f);
+        m_isolineShader.setVec4("linecolor", color);
+        printOpenGLError();
+
+        for (auto &line : isolines)
+            line.draw();
+        printOpenGLError();
+    }
+
+    // draw ImGui windows
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::Begin("inpreCICE menu");
+    {
+        ImGui::DragFloatRange2(
+            "Transfer function interval", &m_cmClipMin, &m_cmClipMax, 0.001f);
+        ImGui::Separator();
+        ImGui::Checkbox("Demo Window", &m_showDemoWindow);
+        ImGui::Separator();
+        ImGui::Text(
+            "Application average %.3f ms/frame (%.1f FPS)",
+            1000.0f / ImGui::GetIO().Framerate,
+            ImGui::GetIO().Framerate);
+    }
+
+    if(m_showDemoWindow) ImGui::ShowDemoWindow(&m_showDemoWindow);
+    ImGui::End();
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    glfwSwapBuffers(m_window);
+
+
+    if (printOpenGLError())
+        return EXIT_FAILURE;
+    else
+        return EXIT_SUCCESS;
+}
+
 //-----------------------------------------------------------------------------
 // subroutines
 //-----------------------------------------------------------------------------

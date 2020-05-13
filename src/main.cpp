@@ -47,13 +47,13 @@ int main(int argc, char *argv[])
 
     InpreciceAdapter interface( "Visus", 0, 1 );
     interface.configure("precice-config.xml");
-    interface.setMeshName( "VisusMesh" );
+    interface.setMeshName("VisusMesh");
 
     interface.setVisualizationMesh(meshFile);
 
     interface.initialize();
 
-    //Run precice (runs a thread)
+    // Run precice (runs a thread)
     interface.runCouplingThreaded();
 
 
@@ -61,13 +61,22 @@ int main(int argc, char *argv[])
     bool run = true;
     while(run)
     {
-      {
-        if (EXIT_FAILURE == renderer.draw(interface.getConcentrationVector()))
-        {
-          std::cout << "Error: Renderer draw call reported a failure!"
-            << std::endl;
-        }
-      }
+            {
+                const boost::multi_array<double, 2> data =
+                    interface.getConcentrationVector();
+                std::array<
+                    std::reference_wrapper<
+                            const boost::multi_array<double, 2>>,
+                    9> dataArray = {
+                        data, data, data, data, data, data, data, data, data };
+
+                if (EXIT_FAILURE == renderer.drawFractureNetwork(dataArray))
+                {
+                  std::cout << "Error: Renderer draw call reported a failure!"
+                    << std::endl;
+                }
+            }
+
       run = renderer.processEvents();
     }
 

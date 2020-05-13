@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <functional>
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 
@@ -45,16 +46,38 @@ namespace draw
         bool processEvents();
 
         /**
-         * \brief Cyclic draw call
+         * \brief Draw call for visualization of the single fracture case
          *
-         * \return EXIT_SUCCESS true as long as the window is still open, false when
-         *         it was closed
+         * \param data  scalar data values
+         * \param isovalueInterval delta between isolines
          *
-         * Event processing function that has to be called periodically in
-         * order to process events like resizing and closing of the drawing
-         * window.
+         * \return EXIT_SUCCESS true as long as the window is still open,
+         *         false when it was closed
+         *
+         * Draws the scalar data values into a window spanning quad with
+         * the viridis colormap and isolines.
          */
-        int draw(const boost::multi_array<double, 2> &data);
+        int drawSingleFracture(
+            const boost::multi_array<double, 2> &data,
+            float isovalueInterval = 1e-4f);
+
+        /**
+         * \brief Draw call for visualization of the fracture network case
+         *
+         * \param dataArray  array of scalar data values for the 9 fractures
+         * \param isovalueInterval delta between isolines
+         *
+         * \return EXIT_SUCCESS true as long as the window is still open,
+         *         false when it was closed
+         *
+         * Draws the scalar data values as texture onto 3D planes representing
+         * the fracture network.
+         */
+        int drawFractureNetwork(
+            const std::array<
+                std::reference_wrapper<const boost::multi_array<double, 2>>,
+                9> &dataArray,
+            float isovalueInterval = 1e-4f);
 
         private:
         GLFWwindow* m_window;
