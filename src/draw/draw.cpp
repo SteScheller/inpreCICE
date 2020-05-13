@@ -214,7 +214,7 @@ int draw::Renderer::draw(const boost::multi_array<double, 2> &data)
 
     m_isolineShader.use();
     m_isolineShader.setMat3("pvmMx", pvmMx);
-    for (float isovalue = 1e-3f; isovalue < 1e-2f; isovalue += 5e-4f)
+    for (float isovalue = 1e-3f; isovalue < 1e-2f; isovalue += 1e-4f)
     {
         std::vector<util::geometry::Line2D> isolines =
             util::extractIsolines(dataTexture, isovalue);
