@@ -26,11 +26,32 @@
 // draw class construction and destruction
 //-----------------------------------------------------------------------------
 draw::Renderer::Renderer() :
+    // window state
     m_window(nullptr),
     m_windowDimensions{ {1280, 720} },
     m_isInitialized(false),
+    // common visualization parameters
     m_cmClipMin(0.f),
     m_cmClipMax(0.01f),
+    m_isovalueInterval(1e-4),
+    // fracture network geometry
+    m_fractureNetwork{
+        false, false, false, false, false, false, false, false, false},
+    m_fractureModelMxs{ glm::mat4(1.f), glm::mat4(1.f), glm::mat4(1.f),
+        glm::mat4(1.f), glm::mat4(1.f), glm::mat4(1.f),
+        glm::mat4(1.f), glm::mat4(1.f), glm::mat4(1.f) },
+    // 3D visualization objects and parameters
+    m_fovY(45.f),
+    m_zNear(0.000001f),
+    m_zFar(30.f),
+    m_cameraPosition(1.2f, 0.75f, 1.f),
+    m_cameraLookAt(0.f),
+    m_cameraZoomSpeed(0.1f),
+    m_cameraRotationSpeed(0.2f),
+    m_cameraTranslationSpeed(0.002f),
+    m_3dViewMx(1.f),
+    m_3dProjMx(1.f),
+    // common rendering objects
     m_viridisMap(),
     m_sampleShader(),
     m_isolineShader(),
@@ -99,6 +120,32 @@ int draw::Renderer::initialize()
     // geometry
     // ------------------------------------------------------------------------
     m_windowQuad = util::geometry::Quad(true);
+    for (size_t i = 0; i < 9; ++i)
+        // TODO: replace with a 3D Quad
+        m_fractureNetwork[i] = util::geometry::Quad(true);
+
+    //-------------------------------------------------------------------------
+    // transformation matrices
+    //-------------------------------------------------------------------------
+    // initialize model matrices for fracture network case
+    // TODO
+    for (size_t i = 0; i < 9; ++i)
+    {
+
+    }
+
+    // initialize view and projections matrices for 3D visualization
+    glm::vec3 right = glm::normalize(
+        glm::cross(-m_cameraPosition, glm::vec3(0.f, 1.f, 0.f)));
+    glm::vec3 up = glm::normalize(glm::cross(right, -m_cameraPosition));
+    m_3dViewMx = glm::lookAt(m_cameraPosition, m_cameraLookAt, up);
+
+    m_3dProjMx = glm::perspective(
+        glm::radians(m_fovY),
+        static_cast<float>(m_windowDimensions[0]) /
+            static_cast<float>(m_windowDimensions[1]),
+        m_zNear,
+        m_zFar);
 
     //-------------------------------------------------------------------------
     // utility textures
@@ -163,8 +210,7 @@ bool draw::Renderer::processEvents()
 
 //-----------------------------------------------------------------------------
 int draw::Renderer::drawSingleFracture(
-        const boost::multi_array<double, 2> &data,
-        float isovalueInterval)
+        const boost::multi_array<double, 2> &data)
 {
     if (false == m_isInitialized)
     {
@@ -222,7 +268,7 @@ int draw::Renderer::drawSingleFracture(
     for (
             float isovalue = 1e-3f;
             isovalue < 1e-2f;
-            isovalue += isovalueInterval)
+            isovalue += m_isovalueInterval)
     {
         std::vector<util::geometry::Line2D> isolines =
             util::extractIsolines(dataTexture, isovalue);
@@ -240,27 +286,7 @@ int draw::Renderer::drawSingleFracture(
         printOpenGLError();
     }
 
-    // draw ImGui windows
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    ImGui::Begin("inpreCICE menu");
-    {
-        ImGui::DragFloatRange2(
-            "Transfer function interval", &m_cmClipMin, &m_cmClipMax, 0.001f);
-        ImGui::Separator();
-        ImGui::Checkbox("Demo Window", &m_showDemoWindow);
-        ImGui::Separator();
-        ImGui::Text(
-            "Application average %.3f ms/frame (%.1f FPS)",
-            1000.0f / ImGui::GetIO().Framerate,
-            ImGui::GetIO().Framerate);
-    }
-
-    if(m_showDemoWindow) ImGui::ShowDemoWindow(&m_showDemoWindow);
-    ImGui::End();
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    renderImgui();
 
     glfwSwapBuffers(m_window);
 
@@ -272,12 +298,8 @@ int draw::Renderer::drawSingleFracture(
 }
 
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 int draw::Renderer::drawFractureNetwork(
-        const std::array<
-            std::reference_wrapper<const boost::multi_array<double, 2>>,
-            9> &dataArray,
-        float isovalueInterval)
+        const fractureDataArray_t &dataArray)
 {
     if (false == m_isInitialized)
     {
@@ -336,7 +358,7 @@ int draw::Renderer::drawFractureNetwork(
     for (
             float isovalue = 1e-3f;
             isovalue < 1e-2f;
-            isovalue += isovalueInterval)
+            isovalue += m_isovalueInterval)
     {
         std::vector<util::geometry::Line2D> isolines =
             util::extractIsolines(dataTexture, isovalue);
@@ -354,27 +376,7 @@ int draw::Renderer::drawFractureNetwork(
         printOpenGLError();
     }
 
-    // draw ImGui windows
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    ImGui::Begin("inpreCICE menu");
-    {
-        ImGui::DragFloatRange2(
-            "Transfer function interval", &m_cmClipMin, &m_cmClipMax, 0.001f);
-        ImGui::Separator();
-        ImGui::Checkbox("Demo Window", &m_showDemoWindow);
-        ImGui::Separator();
-        ImGui::Text(
-            "Application average %.3f ms/frame (%.1f FPS)",
-            1000.0f / ImGui::GetIO().Framerate,
-            ImGui::GetIO().Framerate);
-    }
-
-    if(m_showDemoWindow) ImGui::ShowDemoWindow(&m_showDemoWindow);
-    ImGui::End();
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    renderImgui();
 
     glfwSwapBuffers(m_window);
 
@@ -469,6 +471,37 @@ void draw::Renderer::createHelpMarker(const std::string description)
         ImGui::PopTextWrapPos();
         ImGui::EndTooltip();
     }
+}
+
+void draw::Renderer::renderImgui(void)
+{
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::Begin("inpreCICE menu");
+    {
+        ImGui::DragFloatRange2(
+            "Transfer function interval", &m_cmClipMin, &m_cmClipMax, 0.001f);
+        ImGui::DragFloat(
+            "Isoline interval",
+            &m_isovalueInterval,
+            1e-5f,
+            1e-5f,
+            0.1f,
+            "%.5f");
+        ImGui::Separator();
+        ImGui::Checkbox("Demo Window", &m_showDemoWindow);
+        ImGui::Separator();
+        ImGui::Text(
+            "Application average %.3f ms/frame (%.1f FPS)",
+            1000.0f / ImGui::GetIO().Framerate,
+            ImGui::GetIO().Framerate);
+    }
+
+    if(m_showDemoWindow) ImGui::ShowDemoWindow(&m_showDemoWindow);
+    ImGui::End();
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 //-----------------------------------------------------------------------------

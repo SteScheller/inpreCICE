@@ -62,13 +62,10 @@ int main(int argc, char *argv[])
     while(run)
     {
             {
-                const boost::multi_array<double, 2> data =
+                const draw::Renderer::fractureData_t data =
                     interface.getConcentrationVector();
-                std::array<
-                    std::reference_wrapper<
-                            const boost::multi_array<double, 2>>,
-                    9> dataArray = {
-                        data, data, data, data, data, data, data, data, data };
+                const draw::Renderer::fractureDataArray_t dataArray =
+                    { data, data, data, data, data, data, data, data, data };
 
                 if (EXIT_FAILURE == renderer.drawFractureNetwork(dataArray))
                 {

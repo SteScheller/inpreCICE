@@ -49,7 +49,6 @@ namespace draw
          * \brief Draw call for visualization of the single fracture case
          *
          * \param data  scalar data values
-         * \param isovalueInterval delta between isolines
          *
          * \return EXIT_SUCCESS true as long as the window is still open,
          *         false when it was closed
@@ -57,15 +56,13 @@ namespace draw
          * Draws the scalar data values into a window spanning quad with
          * the viridis colormap and isolines.
          */
-        int drawSingleFracture(
-            const boost::multi_array<double, 2> &data,
-            float isovalueInterval = 1e-4f);
+        using fractureData_t = boost::multi_array<double, 2>;
+        int drawSingleFracture(const fractureData_t &data);
 
         /**
          * \brief Draw call for visualization of the fracture network case
          *
          * \param dataArray  array of scalar data values for the 9 fractures
-         * \param isovalueInterval delta between isolines
          *
          * \return EXIT_SUCCESS true as long as the window is still open,
          *         false when it was closed
@@ -73,11 +70,9 @@ namespace draw
          * Draws the scalar data values as texture onto 3D planes representing
          * the fracture network.
          */
-        int drawFractureNetwork(
-            const std::array<
-                std::reference_wrapper<const boost::multi_array<double, 2>>,
-                9> &dataArray,
-            float isovalueInterval = 1e-4f);
+        using fractureDataArray_t =
+                std::array<std::reference_wrapper<const fractureData_t>, 9>;
+        int drawFractureNetwork(const fractureDataArray_t &dataArray);
 
         private:
         GLFWwindow* m_window;
@@ -89,6 +84,27 @@ namespace draw
         float m_cmClipMin;
         float m_cmClipMax;
 
+        // interval between isolines
+        float m_isovalueInterval;
+
+        // fracture network geometry
+        std::array<util::geometry::Quad, 9> m_fractureNetwork;
+        std::array<glm::mat4, 9> m_fractureModelMxs;
+
+        // 3D visualization objects
+        float m_fovY;
+        float m_zNear;
+        float m_zFar;
+        glm::vec3 m_cameraPosition;
+        glm::vec3 m_cameraLookAt;
+        float m_cameraZoomSpeed;
+        float m_cameraRotationSpeed;
+        float m_cameraTranslationSpeed;
+
+        glm::mat4 m_3dViewMx;
+        glm::mat4 m_3dProjMx;
+
+        // common rendering objects
         util::FramebufferObject m_framebuffer;
         util::texture::Texture2D m_viridisMap;
         Shader m_sampleShader;
@@ -113,6 +129,8 @@ namespace draw
         void reloadShaders();
 
         void createHelpMarker(const std::string description);
+
+        void renderImgui(void);
 
         //---------------------------------------------------------------------
         // glfw callback functions
