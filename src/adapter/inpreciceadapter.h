@@ -40,7 +40,8 @@ class InpreciceAdapter
     std::thread preciceThread_;
 
     void runCoupling( boost::multi_array<double, 2>& pressure,
-                      boost::multi_array<double, 2>& concentration );
+                      boost::multi_array<double, 2>& concentration,
+                      bool printData = false);
   public:
 
     // No standard constructor as we want to create preCICE instance on creation of adapter
