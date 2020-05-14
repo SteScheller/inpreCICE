@@ -53,7 +53,8 @@ draw::Renderer::Renderer() :
     m_3dProjMx(1.f),
     // common rendering objects
     m_viridisMap(),
-    m_sampleShader(),
+    m_windowShader(),
+    m_fractureShader(),
     m_isolineShader(),
     m_windowQuad(false),
     m_quadProjMx(glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f)),
@@ -111,8 +112,11 @@ int draw::Renderer::initialize()
     //-------------------------------------------------------------------------
     // shader setup
     //-------------------------------------------------------------------------
-    m_sampleShader = Shader(
-            "src/draw/shader/sample.vert", "src/draw/shader/sample.frag");
+    m_windowShader = Shader(
+            "src/draw/shader/windowQuad.vert",
+            "src/draw/shader/windowQuad.frag");
+    m_fractureShader = Shader(
+            "src/draw/shader/fracture.vert", "src/draw/shader/fracture.frag");
     m_isolineShader = Shader(
             "src/draw/shader/isolines.vert", "src/draw/shader/isolines.frag");
 
@@ -121,18 +125,38 @@ int draw::Renderer::initialize()
     // ------------------------------------------------------------------------
     m_windowQuad = util::geometry::Quad(true);
     for (size_t i = 0; i < 9; ++i)
-        // TODO: replace with a 3D Quad
         m_fractureNetwork[i] = util::geometry::Quad(true);
 
     //-------------------------------------------------------------------------
     // transformation matrices
     //-------------------------------------------------------------------------
     // initialize model matrices for fracture network case
-    // TODO
-    for (size_t i = 0; i < 9; ++i)
-    {
+    //
+    // see appendix 6.1 in https://arxiv.org/pdf/1809.06926.pdf for
+    // fracture coordinates
+    //
+    const glm::mat4 s1 = glm::scale(glm::mat4(1.f), glm::vec3(0.5f));
+    const glm::mat4 s2 = glm::scale(glm::mat4(1.f), glm::vec3(0.25f));
 
-    }
+    const float pi = 3.14159f;
+    const glm::mat4 r1 = glm::rotate(
+            glm::mat4(1.f), 0.5f * pi, glm::vec3(0.f, 1.f, 0.f));
+    const glm::mat4 r2 = glm::rotate(
+            glm::mat4(1.f), 0.5f * pi, glm::vec3(1.f, 0.f, 0.f));
+
+    const glm::mat4 t1 = glm::translate(glm::mat4(1.f), glm::vec3(0.5f));
+    const glm::mat4 t2 = glm::translate(glm::mat4(1.f), glm::vec3(0.75f));
+    const glm::mat4 t3 = glm::translate(glm::mat4(1.f), glm::vec3(0.625f));
+
+    m_fractureModelMxs[0] = t1 * r1;
+    m_fractureModelMxs[1] = t1 * r2;
+    m_fractureModelMxs[2] = t1;
+    m_fractureModelMxs[3] = t2 * s1 * r1;
+    m_fractureModelMxs[4] = t2 * s1;
+    m_fractureModelMxs[5] = t2 * s1 * r2;
+    m_fractureModelMxs[6] = t3 * s2 * r2;
+    m_fractureModelMxs[7] = t3 * s2 * r1;
+    m_fractureModelMxs[8] = t3 * s2;
 
     // initialize view and projections matrices for 3D visualization
     glm::vec3 right = glm::normalize(
@@ -227,7 +251,7 @@ int draw::Renderer::drawSingleFracture(
     for (size_t x = 0; x < data.shape()[1]; ++x)
         dataTexture[y][x] = static_cast<float>(data[y][x]);
 
-    util::texture::Texture2D sampleTex(
+    util::texture::Texture2D fractureTex(
             GL_R32F,
             GL_RED,
             0,
@@ -239,22 +263,22 @@ int draw::Renderer::drawSingleFracture(
             static_cast<void const*>(dataTexture.data()));
 
     glViewport(0, 0, m_windowDimensions[0], m_windowDimensions[1]);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    m_framebuffer.bind();
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    // draw the data
-    m_sampleShader.use();
-    m_sampleShader.setMat4("projMX", m_quadProjMx);
-    m_sampleShader.setFloat("tfMin", m_cmClipMin);
-    m_sampleShader.setFloat("tfMax", m_cmClipMax);
+    // draw the data into the framebuffer object
+    m_fractureShader.use();
+    m_fractureShader.setMat4("projMX", m_quadProjMx);
+    m_fractureShader.setFloat("tfMin", m_cmClipMin);
+    m_fractureShader.setFloat("tfMax", m_cmClipMax);
 
     glActiveTexture(GL_TEXTURE0);
-    sampleTex.bind();
-    m_sampleShader.setInt("sampleTex", 0);
+    fractureTex.bind();
+    m_fractureShader.setInt("sampleTex", 0);
 
     glActiveTexture(GL_TEXTURE1);
     m_viridisMap.bind();
-    m_sampleShader.setInt("tfTex", 1);
+    m_fractureShader.setInt("tfTex", 1);
 
     m_windowQuad.draw();
 
@@ -279,12 +303,21 @@ int draw::Renderer::drawSingleFracture(
                     isovalue * 100.f),
                 1.f);
         m_isolineShader.setVec4("linecolor", color);
-        printOpenGLError();
 
         for (auto &line : isolines)
             line.draw();
-        printOpenGLError();
     }
+
+    // show the rendering result as window filling quad
+    glViewport(0, 0, m_windowDimensions[0], m_windowDimensions[1]);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+    glActiveTexture(GL_TEXTURE0);
+    m_framebuffer.accessTextures()[0].bind();
+    m_windowShader.setInt("renderTex", 0);
+
+    m_windowQuad.draw();
 
     renderImgui();
 
@@ -317,7 +350,7 @@ int draw::Renderer::drawFractureNetwork(
     for (size_t x = 0; x < data.shape()[1]; ++x)
         dataTexture[y][x] = static_cast<float>(data[y][x]);
 
-    util::texture::Texture2D sampleTex(
+    util::texture::Texture2D fractureTex(
             GL_R32F,
             GL_RED,
             0,
@@ -333,18 +366,18 @@ int draw::Renderer::drawFractureNetwork(
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     // draw the data
-    m_sampleShader.use();
-    m_sampleShader.setMat4("projMX", m_quadProjMx);
-    m_sampleShader.setFloat("tfMin", m_cmClipMin);
-    m_sampleShader.setFloat("tfMax", m_cmClipMax);
+    m_fractureShader.use();
+    m_fractureShader.setMat4("projMX", m_quadProjMx);
+    m_fractureShader.setFloat("tfMin", m_cmClipMin);
+    m_fractureShader.setFloat("tfMax", m_cmClipMax);
 
     glActiveTexture(GL_TEXTURE0);
-    sampleTex.bind();
-    m_sampleShader.setInt("sampleTex", 0);
+    fractureTex.bind();
+    m_fractureShader.setInt("sampleTex", 0);
 
     glActiveTexture(GL_TEXTURE1);
     m_viridisMap.bind();
-    m_sampleShader.setInt("tfTex", 1);
+    m_fractureShader.setInt("tfTex", 1);
 
     m_windowQuad.draw();
 
@@ -369,11 +402,9 @@ int draw::Renderer::drawFractureNetwork(
                     isovalue * 100.f),
                 1.f);
         m_isolineShader.setVec4("linecolor", color);
-        printOpenGLError();
 
         for (auto &line : isolines)
             line.draw();
-        printOpenGLError();
     }
 
     renderImgui();
@@ -451,9 +482,12 @@ GLFWwindow* draw::Renderer::createWindow(
 void draw::Renderer::reloadShaders()
 {
     std::cout << "Reloading shaders..." << std::endl;
-    m_sampleShader = Shader(
-            "src/draw/shader/sample.vert",
-            "src/draw/shader/sample.frag");
+    m_windowShader = Shader(
+            "src/draw/shader/windowQuad.vert",
+            "src/draw/shader/windowQuad.frag");
+    m_fractureShader = Shader(
+            "src/draw/shader/fracture.vert",
+            "src/draw/shader/fracture.frag");
     m_isolineShader = Shader(
             "src/draw/shader/isolines.vert",
             "src/draw/shader/isolines.frag");

@@ -107,7 +107,8 @@ namespace draw
         // common rendering objects
         util::FramebufferObject m_framebuffer;
         util::texture::Texture2D m_viridisMap;
-        Shader m_sampleShader;
+        Shader m_windowShader;
+        Shader m_fractureShader;
         Shader m_isolineShader;
         util::geometry::Quad m_windowQuad;
         glm::mat4 m_quadProjMx;
