@@ -313,6 +313,9 @@ int draw::Renderer::drawSingleFracture(
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+    m_windowShader.use();
+    m_windowShader.setMat4("projMX", m_quadProjMx);
+
     glActiveTexture(GL_TEXTURE0);
     m_framebuffer.accessTextures()[0].bind();
     m_windowShader.setInt("renderTex", 0);
@@ -362,10 +365,10 @@ int draw::Renderer::drawFractureNetwork(
             static_cast<void const*>(dataTexture.data()));
 
     glViewport(0, 0, m_windowDimensions[0], m_windowDimensions[1]);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    m_framebuffer.bind();
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    // draw the data
+    // draw the data into the framebuffer object
     m_fractureShader.use();
     m_fractureShader.setMat4("projMX", m_quadProjMx);
     m_fractureShader.setFloat("tfMin", m_cmClipMin);
@@ -406,6 +409,20 @@ int draw::Renderer::drawFractureNetwork(
         for (auto &line : isolines)
             line.draw();
     }
+
+    // show the rendering result as window filling quad
+    glViewport(0, 0, m_windowDimensions[0], m_windowDimensions[1]);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+    m_windowShader.use();
+    m_windowShader.setMat4("projMX", m_quadProjMx);
+
+    glActiveTexture(GL_TEXTURE0);
+    m_framebuffer.accessTextures()[0].bind();
+    m_windowShader.setInt("renderTex", 0);
+
+    m_windowQuad.draw();
 
     renderImgui();
 
