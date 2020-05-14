@@ -15,7 +15,8 @@
 util::FramebufferObject::FramebufferObject() :
     m_ID(0),
     m_textures(std::vector<util::texture::Texture2D>(0)),
-    m_attachments(0)
+    m_attachments(0),
+    m_drawBuffers(0)
 {
 }
 
@@ -24,7 +25,8 @@ util::FramebufferObject::FramebufferObject(
         const std::vector<GLenum> &attachments) :
     m_ID(0),
     m_textures(std::move(textures)),
-    m_attachments(attachments)
+    m_attachments(attachments),
+    m_drawBuffers(0)
 {
     if ((m_textures.size() != m_attachments.size()))
         return;
@@ -35,6 +37,9 @@ util::FramebufferObject::FramebufferObject(
 
     for (size_t i = 0; i < m_textures.size(); ++i)
     {
+        if (    (m_attachments[i] != GL_DEPTH_ATTACHMENT) &&
+                (m_attachments[i] != GL_STENCIL_ATTACHMENT) )
+            m_drawBuffers.emplace_back(m_attachments[i]);
         glFramebufferTexture2D(
             GL_FRAMEBUFFER,
             m_attachments[i],
@@ -55,7 +60,8 @@ util::FramebufferObject::FramebufferObject(
 util::FramebufferObject::FramebufferObject(util::FramebufferObject&& other) :
     m_ID(other.m_ID),
     m_textures(std::move(other.m_textures)),
-    m_attachments(std::move(other.m_attachments))
+    m_attachments(std::move(other.m_attachments)),
+    m_drawBuffers(std::move(other.m_drawBuffers))
 {
     other.m_ID = 0;
 }
@@ -69,6 +75,7 @@ util::FramebufferObject& util::FramebufferObject::operator=(
     m_ID = other.m_ID;
     m_textures = std::move(other.m_textures);
     m_attachments = std::move(other.m_attachments);
+    m_drawBuffers = std::move(other.m_drawBuffers);
     other.m_ID = 0;
 
     return *this;
@@ -83,7 +90,7 @@ util::FramebufferObject::~FramebufferObject()
 void util::FramebufferObject::bind() const
 {
     glBindFramebuffer(GL_FRAMEBUFFER, m_ID);
-    glDrawBuffers(m_attachments.size(), m_attachments.data());
+    glDrawBuffers(m_drawBuffers.size(), m_drawBuffers.data());
 }
 
 void util::FramebufferObject::bindRead(size_t attachmentNumber) const

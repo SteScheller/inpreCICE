@@ -17,6 +17,15 @@ namespace draw
      */
     class Renderer
     {
+        //---------------------------------------------------------------------
+        // class-wide constants and default values
+        //---------------------------------------------------------------------
+        static constexpr int REQUIRED_OGL_VERSION_MAJOR = 3;
+        static constexpr int REQUIRED_OGL_VERSION_MINOR = 3;
+
+        static const glm::vec3 DEFAULT_CAMERA_POSITION;
+        static const glm::vec3 DEFAULT_CAMERA_LOOKAT;
+
         public:
         Renderer();
         Renderer(unsigned int winWidth, unsigned int winHeight);
@@ -104,6 +113,13 @@ namespace draw
         glm::mat4 m_3dViewMx;
         glm::mat4 m_3dProjMx;
 
+        util::FramebufferObject m_fractureFbo;
+
+        Shader m_planeShader;
+        Shader m_frameShader;
+
+        util::geometry::CubeFrame m_volumeFrame;
+
         // common rendering objects
         util::FramebufferObject m_framebuffer;
         util::texture::Texture2D m_viridisMap;
@@ -136,10 +152,38 @@ namespace draw
         //---------------------------------------------------------------------
         // glfw callback functions
         //---------------------------------------------------------------------
+        static void cursorPosition_cb(
+                GLFWwindow *window,
+                double xpos,
+                double ypos);
+
+        static void mouseButton_cb(
+                GLFWwindow* window,
+                int button,
+                int action,
+                int mods);
+
+        static void scroll_cb(
+                GLFWwindow* window,
+                double xoffset,
+                double yoffset);
+
+        static void key_cb(
+                GLFWwindow* window,
+                int key,
+                int scancode,
+                int action,
+                int mods);
+
+        static void char_cb(
+                GLFWwindow* window,
+                unsigned int c);
+
         static void framebufferSize_cb(
                 GLFWwindow* window,
                 int width,
                 int height);
+
         static void error_cb(
                 int error,
                 const char* description);

@@ -61,18 +61,18 @@ int main(int argc, char *argv[])
     bool run = true;
     while(run)
     {
-            {
-                const draw::Renderer::fractureData_t data =
-                    interface.getConcentrationVector();
-                const draw::Renderer::fractureDataArray_t dataArray =
-                    { data, data, data, data, data, data, data, data, data };
+        {
+            const draw::Renderer::fractureData_t data =
+                interface.getConcentrationVector();
+            const draw::Renderer::fractureDataArray_t dataArray =
+                { data, data, data, data, data, data, data, data, data };
 
-                if (EXIT_FAILURE == renderer.drawFractureNetwork(dataArray))
-                {
-                  std::cout << "Error: Renderer draw call reported a failure!"
-                    << std::endl;
-                }
+            if (EXIT_FAILURE == renderer.drawFractureNetwork(dataArray))
+            {
+              std::cout << "Error: Renderer draw call reported a failure!"
+                << std::endl;
             }
+        }
 
       run = renderer.processEvents();
     }
