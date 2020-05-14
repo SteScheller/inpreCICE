@@ -6,7 +6,9 @@ import sys
 
 DIR_OF_THIS_SCRIPT = os.path.abspath(os.path.dirname( __file__ ))
 
-CPP_EXT = {'.cpp', '.cc', '.c++', '.cp', '.cxx'}
+CPP_EXT = {
+        '.cpp', '.cc', '.c++', '.cp', '.cxx',
+        '.hpp', '.hh', '.h++', '.hp', '.hxx'}
 C_EXT = {'.c', '.h'}
 
 INCLUDE = [
