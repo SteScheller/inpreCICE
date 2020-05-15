@@ -82,6 +82,7 @@ namespace util
         GLuint m_ID;
         std::vector<util::texture::Texture2D> m_textures;
         std::vector<GLenum> m_attachments;
+        std::vector<GLenum> m_drawBuffers;
 
     };
 

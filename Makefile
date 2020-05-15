@@ -23,12 +23,12 @@ LINKER = ld
 
 CXXFLAGS = $(INCLUDE) -std=c++14 `pkg-config --cflags glfw3` -fopenmp
 CXXFLAGS += -Wall -Wextra
-DEBUG_CXXFLAGS = -DDEBUG -g
+DEBUG_CXXFLAGS = -DDEBUG -g -Og
 RELEASE_CXXFLAGS = -DRELEASE -O3
 
 CFLAGS = $(INCLUDE) -std=c11 `pkg-config --cflags glfw3` -fopenmp
 CFLAGS += -Wall -Wextra
-DEBUG_CFLAGS = -DDEBUG -g
+DEBUG_CFLAGS = -DDEBUG -g -Og
 RELEASE_CFLAGS = -DRELEASE -O3
 
 LDFLAGS = -lGL `pkg-config --static --libs glfw3` -fopenmp

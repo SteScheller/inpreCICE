@@ -91,11 +91,12 @@ void InpreciceAdapter::initialize()
 void InpreciceAdapter::runCouplingThreaded()
 {
   assert( preciceIsInitialized_ );
-  preciceThread_ = std::thread( &InpreciceAdapter::runCoupling, this, std::ref(pressure_), std::ref(concentration_) );
+  preciceThread_ = std::thread( &InpreciceAdapter::runCoupling, this, std::ref(pressure_), std::ref(concentration_), false);
 }
 
 void InpreciceAdapter::runCoupling( boost::multi_array<double, 2>& pressure,
-                                    boost::multi_array<double, 2>& concentration )
+                                    boost::multi_array<double, 2>& concentration,
+                                    bool printData)
 {
   if ( interface_->isReadDataAvailable() )
   {
@@ -126,12 +127,13 @@ void InpreciceAdapter::runCoupling( boost::multi_array<double, 2>& pressure,
                                        concentration.data());
     }
 
-    for (size_t y=0; y < concentration_.shape()[1]; ++y)
-    {
-      for (size_t x=0; x < concentration_.shape()[0]; ++x)
-        std::printf("%.3f ", concentration_[y][x]);
-      std::cout << std::endl;
-    }
+    if (printData)
+      for (size_t y=0; y < concentration_.shape()[1]; ++y)
+      {
+        for (size_t x=0; x < concentration_.shape()[0]; ++x)
+          std::printf("%.3f ", concentration_[y][x]);
+        std::cout << std::endl;
+      }
 
     const double preciceDt = interface_->advance(timeStepSize_);
     timeStepSize_ = std::max( timeStepSize_, preciceDt );
