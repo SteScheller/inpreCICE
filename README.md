@@ -5,6 +5,7 @@ In situ visualization for *Verification benchmarks for single-phase flow in thre
 [Call for Participation](https://arxiv.org/pdf/1809.06926.pdf)).
 Coupling to any solver is realized with the [*preCICE* framework]().
 
+![teaser image](./screenshots/teaser.png)
 ## Usage
 
 Compile the program and create links to the respective `release` and `debug` binaries by executing the following commands in the base directory of the repository:
