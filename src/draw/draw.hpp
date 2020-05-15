@@ -26,6 +26,8 @@ namespace draw
         static const glm::vec3 DEFAULT_CAMERA_POSITION;
         static const glm::vec3 DEFAULT_CAMERA_LOOKAT;
 
+        static const std::array<size_t, 2>FRACTURE_TEXTURE_RESOLUTION;
+
         public:
         Renderer();
         Renderer(unsigned int winWidth, unsigned int winHeight);
@@ -148,6 +150,8 @@ namespace draw
         void createHelpMarker(const std::string description);
 
         void renderImgui(void);
+
+        void updateFramebufferObjects();
 
         //---------------------------------------------------------------------
         // glfw callback functions

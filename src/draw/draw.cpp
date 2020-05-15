@@ -27,6 +27,8 @@
 //-----------------------------------------------------------------------------
 const glm::vec3 draw::Renderer::DEFAULT_CAMERA_POSITION(1.5f, 1.25f, 1.5f);
 const glm::vec3 draw::Renderer::DEFAULT_CAMERA_LOOKAT(0.5f);
+const std::array<size_t, 2> draw::Renderer::FRACTURE_TEXTURE_RESOLUTION =
+    { 720, 720 };
 
 //-----------------------------------------------------------------------------
 // draw class construction and destruction
@@ -203,54 +205,9 @@ int draw::Renderer::initialize()
             static_cast<void const *>(&VIRIDIS_FLOAT_RGB_128[0]));
 
     //-------------------------------------------------------------------------
-    // framebuffer object for deferred shading
+    // framebuffer objects for deferred shading
     //-------------------------------------------------------------------------
-    // for the final rendering result
-    {
-        std::vector<util::texture::Texture2D> fboTextures;
-        fboTextures.emplace_back(
-                GL_RGBA,
-                GL_RGBA,
-                0,
-                GL_FLOAT,
-                GL_LINEAR,
-                GL_CLAMP_TO_BORDER,
-                m_windowDimensions[0],
-                m_windowDimensions[1]);
-
-        fboTextures.emplace_back(
-                GL_DEPTH_COMPONENT32,
-                GL_DEPTH_COMPONENT,
-                0,
-                GL_FLOAT,
-                GL_LINEAR,
-                GL_CLAMP_TO_BORDER,
-                m_windowDimensions[0],
-                m_windowDimensions[1]);
-
-        const std::vector<GLenum> attachments {
-            GL_COLOR_ATTACHMENT0 , GL_DEPTH_ATTACHMENT };
-        m_framebuffer = util::FramebufferObject(
-                std::move(fboTextures), attachments);
-
-    }
-
-    // for textures of 3D fractures
-    {
-        std::vector<util::texture::Texture2D> fboTextures;
-        fboTextures.emplace_back(
-                GL_RGBA,
-                GL_RGBA,
-                0,
-                GL_FLOAT,
-                GL_LINEAR,
-                GL_CLAMP_TO_BORDER,
-                m_windowDimensions[0],
-                m_windowDimensions[1]);
-        const std::vector<GLenum> attachments { GL_COLOR_ATTACHMENT0 };
-        m_fractureFbo = util::FramebufferObject(
-                std::move(fboTextures), attachments);
-    }
+    updateFramebufferObjects();
 
     if (EXIT_SUCCESS == ret)
         m_isInitialized = true;
@@ -415,7 +372,11 @@ int draw::Renderer::drawFractureNetwork(
                 static_cast<void const*>(dataTexture.data()));
 
         // render the fracture into a 2D texture
-        glViewport(0, 0, m_windowDimensions[0], m_windowDimensions[1]);
+        glViewport(
+            0,
+            0,
+            FRACTURE_TEXTURE_RESOLUTION[0],
+            FRACTURE_TEXTURE_RESOLUTION[1]);
         m_fractureFbo.bind();
         glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
@@ -654,6 +615,56 @@ void draw::Renderer::renderImgui(void)
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
+void draw::Renderer::updateFramebufferObjects(void)
+{
+    // for the final rendering result
+    {
+        std::vector<util::texture::Texture2D> fboTextures;
+        fboTextures.emplace_back(
+                GL_RGBA,
+                GL_RGBA,
+                0,
+                GL_FLOAT,
+                GL_LINEAR,
+                GL_CLAMP_TO_BORDER,
+                m_windowDimensions[0],
+                m_windowDimensions[1]);
+
+        fboTextures.emplace_back(
+                GL_DEPTH_COMPONENT32,
+                GL_DEPTH_COMPONENT,
+                0,
+                GL_FLOAT,
+                GL_LINEAR,
+                GL_CLAMP_TO_BORDER,
+                m_windowDimensions[0],
+                m_windowDimensions[1]);
+
+        const std::vector<GLenum> attachments {
+            GL_COLOR_ATTACHMENT0 , GL_DEPTH_ATTACHMENT };
+        m_framebuffer = util::FramebufferObject(
+                std::move(fboTextures), attachments);
+
+    }
+
+    // for textures of 3D fractures
+    {
+        std::vector<util::texture::Texture2D> fboTextures;
+        fboTextures.emplace_back(
+                GL_RGBA,
+                GL_RGBA,
+                0,
+                GL_FLOAT,
+                GL_LINEAR,
+                GL_CLAMP_TO_BORDER,
+                FRACTURE_TEXTURE_RESOLUTION[0],
+                FRACTURE_TEXTURE_RESOLUTION[1]);
+        const std::vector<GLenum> attachments { GL_COLOR_ATTACHMENT0 };
+        m_fractureFbo = util::FramebufferObject(
+                std::move(fboTextures), attachments);
+    }
+}
+
 //-----------------------------------------------------------------------------
 // GLFW callbacks and input processing
 //-----------------------------------------------------------------------------
@@ -798,6 +809,8 @@ void draw::Renderer::framebufferSize_cb(
 
     pThis->m_windowDimensions[0] = width;
     pThis->m_windowDimensions[1] = height;
+
+    pThis->updateFramebufferObjects();
 }
 
 void draw::Renderer::error_cb(int error, const char* description)
