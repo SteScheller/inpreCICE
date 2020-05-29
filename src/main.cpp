@@ -45,13 +45,28 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    InpreciceAdapter interface( "Visus", 0, 1 );
-    interface.configure("precice-config.xml");
-    interface.setMeshName("VisusMesh");
+    inpreciceadapter::InpreciceAdapter interface( "Visus", "precice-config.xml", 0, 1 );
+    //    interface.configure("precice-config.xml");
+    //    interface.setMeshName("VisusMesh");
+    {
+      inpreciceadapter::VisualizationDataInfoVec_t visData(9);
+      {
+        using namespace inpreciceadapter;
+        for (std::size_t i = 0; i < visData.size(); ++i)
+        {
+          auto& data = visData[i];
+          data.dataName = "Concentration" + std::to_string(i);
+          data.meshName = "VisusMesh" + std::to_string(i);
 
-    interface.setVisualizationMesh(meshFile);
+          std::cout << data << std::endl;
+        }
+      }
 
-    interface.initialize();
+      //interface.setVisualizationMesh(meshFile);
+      //    interface.setVisualizationMeshes(meshFile, visData );
+
+      interface.initialize(meshFile, visData);
+    }
 
     // Run precice (runs a thread)
     interface.runCouplingThreaded();
@@ -61,18 +76,20 @@ int main(int argc, char *argv[])
     bool run = true;
     while(run)
     {
-        {
-            const draw::Renderer::fractureData_t data =
-                interface.getConcentrationVector();
-            const draw::Renderer::fractureDataArray_t dataArray =
-                { data, data, data, data, data, data, data, data, data };
+      {
+        //            const draw::Renderer::fractureData_t data =
+        //                interface.getConcentrationVector();
+        const inpreciceadapter::VisualizationDataInfoFullVec_t visData = interface.getVisualisationData();
+        const draw::Renderer::fractureDataArray_t dataArray =
+            {visData[0].buffer, visData[1].buffer, visData[2].buffer, visData[3].buffer,
+             visData[4].buffer, visData[5].buffer, visData[6].buffer, visData[7].buffer, visData[8].buffer};
 
-            if (EXIT_FAILURE == renderer.drawFractureNetwork(dataArray))
-            {
-              std::cout << "Error: Renderer draw call reported a failure!"
-                << std::endl;
-            }
+        if (EXIT_FAILURE == renderer.drawFractureNetwork(dataArray))
+        {
+          std::cout << "Error: Renderer draw call reported a failure!"
+                    << std::endl;
         }
+      }
 
       run = renderer.processEvents();
     }
@@ -120,6 +137,7 @@ int applyProgramOptions(int argc, char *argv[], std::string& meshFile)
     catch(std::exception &e)
     {
         std::cout << "Invalid program options!" << std::endl;
+        std::cout << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 
