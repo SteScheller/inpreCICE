@@ -13,6 +13,7 @@ SOURCES += lib/gl3w/GL/gl3w.c
 SOURCES += src/adapter/inpreciceadapter.cpp
 
 OBJS = $(addsuffix .o, $(basename $(SOURCES)))
+DEPS = $(addsuffix .d, $(basename $(SOURCES)))
 
 INCLUDE = -I./src -I./src/draw
 INCLUDE += -I./include -I./lib/gl3w -I./lib/imgui -I./lib/nlohmann
@@ -75,11 +76,13 @@ start:
 
 %.o: %.cpp
 	@echo $<
-	@$(CXX) $(CXXFLAGS) $(CXXADDITIONALFLAGS) -c -o $(TARGET_DIR)/$(@F) $<
+#	@$(CXX) $(CXXFLAGS) $(CXXADDITIONALFLAGS) -c -o $(TARGET_DIR)/$(@F) $<
+	@$(CXX) $(CXXFLAGS) $(CXXADDITIONALFLAGS) -c -o "$@" "$<"
 
 %.o: %.c
 	@echo $<
-	@$(CC) $(CFLAGS)  $(CADDITIONALFLAGS) -c -o $(TARGET_DIR)/$(@F) $<
+#	@$(CC) $(CFLAGS)  $(CADDITIONALFLAGS) -c -o $(TARGET_DIR)/$(@F) $<
+	@$(CC) $(CFLAGS)  $(CADDITIONALFLAGS) -c -o "$@" "$<"
 
 $(BUILD_DIR):
 	@echo Creating build directory...
@@ -97,11 +100,19 @@ $(TARGET): $(OBJS)
 	@echo TARGET_DIR: $(TARGET_DIR)
 	@echo TARGET: $(TARGET)
 	@echo
-	@$(CXX) $(addprefix $(TARGET_DIR)/, $(notdir $^)) $(LDFLAGS) $(LDADDITIONALFLAGS) -o $(TARGET_DIR)/$(TARGET)
+#	@$(CXX) $(addprefix $(TARGET_DIR)/, $(notdir $^)) $(LDFLAGS) $(LDADDITIONALFLAGS) -o $(TARGET_DIR)/$(TARGET)
+#	@echo $^
+	#@$(CXX) "./$^" $(LDFLAGS) $(LDADDITIONALFLAGS) -o $(TARGET_DIR)/$(TARGET)
+#	@echo $(CXX) ./$^ $(LDFLAGS) $(LDADDITIONALFLAGS) -o asdf
+	@echo $(PWD)
+	@echo $(CXX) $^ $(LDFLAGS) $(LDADDITIONALFLAGS) -o $(TARGET_DIR)/$(TARGET)
+	@$(CXX) $^ $(LDFLAGS) $(LDADDITIONALFLAGS) -o "$(TARGET_DIR)/$(TARGET)"
+#	@$(CXX) $^ $(LDFLAGS) $(LDADDITIONALFLAGS) -o $@
 
 clean:
 	@echo Cleaning up...
 	@rm -rf ./$(BUILD_DIR)/debug
 	@rm -rf ./$(BUILD_DIR)/release
+	@rm -rf $(DEPS) $(OBJS)
 	@echo Done!
 
