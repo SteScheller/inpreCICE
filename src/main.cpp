@@ -48,25 +48,26 @@ int main(int argc, char *argv[])
     inpreciceadapter::InpreciceAdapter interface( "Visus", "precice-config.xml", 0, 1 );
     //    interface.configure("precice-config.xml");
     //    interface.setMeshName("VisusMesh");
-    {
-      inpreciceadapter::VisualizationDataInfoVec_t visData(9);
-      {
-        using namespace inpreciceadapter;
-        for (std::size_t i = 0; i < visData.size(); ++i)
-        {
-          auto& data = visData[i];
-          data.dataName = "Concentration" + std::to_string(i);
-          data.meshName = "VisusMesh" + std::to_string(i);
+//    {
+//      inpreciceadapter::VisualizationDataInfoVec_t visData(9);
+//      {
+//        using namespace inpreciceadapter;
+//        for (std::size_t i = 0; i < visData.size(); ++i)
+//        {
+//          auto& data = visData[i];
+//          data.dataName = "Concentration" + std::to_string(i);
+//          data.meshName = "VisusMesh" + std::to_string(i);
 
-          std::cout << data << std::endl;
-        }
-      }
+//          std::cout << data << std::endl;
+//        }
+//      }
 
-      //interface.setVisualizationMesh(meshFile);
-      //    interface.setVisualizationMeshes(meshFile, visData );
+//      //interface.setVisualizationMesh(meshFile);
+//      //    interface.setVisualizationMeshes(meshFile, visData );
 
-      interface.initialize(meshFile, visData);
-    }
+//      interface.initialize(meshFile, visData);
+//    }
+    interface.initialize(meshFile);
 
     // Run precice (runs a thread)
     interface.runCouplingThreaded();
@@ -79,10 +80,10 @@ int main(int argc, char *argv[])
       {
         //            const draw::Renderer::fractureData_t data =
         //                interface.getConcentrationVector();
-        const inpreciceadapter::VisualizationDataInfoFullVec_t visData = interface.getVisualisationData();
+        const inpreciceadapter::VisualizationDataInfoVec_t visData = interface.getVisualisationData();
         const draw::Renderer::fractureDataArray_t dataArray =
-            {visData[0].buffer, visData[1].buffer, visData[2].buffer, visData[3].buffer,
-             visData[4].buffer, visData[5].buffer, visData[6].buffer, visData[7].buffer, visData[8].buffer};
+            {visData[0].buffers[0], visData[1].buffers[0], visData[2].buffers[0], visData[3].buffers[0],
+             visData[4].buffers[0], visData[5].buffers[0], visData[6].buffers[0], visData[7].buffers[0], visData[8].buffers[0]};
 
         if (EXIT_FAILURE == renderer.drawFractureNetwork(dataArray))
         {

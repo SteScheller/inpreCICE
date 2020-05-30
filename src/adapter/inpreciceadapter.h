@@ -12,32 +12,41 @@
 
 namespace inpreciceadapter {
 
-struct VisualizationDataInfo {
-//  int meshId = -1;
-//  int dataId = -1;
-  std::string dataName = "";
-  std::string meshName = "";
-
-//  std::array< size_t, 2 > gridDimension;
-};
-
-struct VisualizationDataInfoFull : VisualizationDataInfo {
-
-  int meshId = -1;
-  int dataId = -1;
+//struct VisualizationDataInfo {
+////  int meshId = -1;
+////  int dataId = -1;
 //  std::string dataName = "";
 //  std::string meshName = "";
 
-  std::array< size_t, 2 > gridDimension;
-  std::vector<int> vertexIDs;
-  boost::multi_array<double, 2> buffer;
+////  std::array< size_t, 2 > gridDimension;
+//};
+
+struct VisualizationDataInfo  {
+
+  int meshID{-1};
+  std::vector<int> dataIDs{};
+  std::vector<std::string> dataNames{};
+  std::string meshName{""};
+
+  std::array< size_t, 2 > gridDimension{};
+  std::vector<int> vertexIDs{};
+  std::vector<boost::multi_array<double, 2> > buffers{};
 };
 
 std::ostream& operator<<( std::ostream& os, const VisualizationDataInfo& info );
-std::ostream& operator<<( std::ostream& os, const VisualizationDataInfoFull& info );
+//std::ostream& operator<<( std::ostream& os, const VisualizationDataInfoFull& info );
 
 using VisualizationDataInfoVec_t = std::vector<VisualizationDataInfo>;
-using VisualizationDataInfoFullVec_t = std::vector<VisualizationDataInfoFull>;
+//using VisualizationDataInfoFullVec_t = std::vector<VisualizationDataInfoFull>;
+
+namespace detail {
+
+//void setName( const json& conf )
+//{
+
+//}
+
+} //namespace detail
 
 class InpreciceAdapter
 {
@@ -68,7 +77,7 @@ class InpreciceAdapter
 //    boost::multi_array<double, 2> pressure_;
 //    boost::multi_array<double, 2> concentration_;
 
-    VisualizationDataInfoFullVec_t visInfoData_;
+    VisualizationDataInfoVec_t visInfoData_;
 
     std::thread preciceThread_;
 
@@ -76,7 +85,7 @@ class InpreciceAdapter
 //                      boost::multi_array<double, 2>& concentration,
 //                      bool printData = false);
 
-    void runCoupling(VisualizationDataInfoFullVec_t& visInfoDataVec_,
+    void runCoupling(VisualizationDataInfoVec_t& visInfoDataVec_,
                      bool printData = false);
 //    VisualizationDataInfoFullVec_t
   public:
@@ -109,15 +118,17 @@ class InpreciceAdapter
 
 //    void initialize();
 
-    void initialize(const std::string& meshFilePath,
-                    const VisualizationDataInfoVec_t& visInfoVec );
+//    void initialize(const std::string& meshFilePath,
+//                    const VisualizationDataInfoVec_t& visInfoVec );
+
+    void initialize(const std::string& meshFilePath);
 
     void runCouplingThreaded();
 
     const boost::multi_array<double, 2>& getPressureVector();
     const boost::multi_array<double, 2>& getConcentrationVector();
 
-    VisualizationDataInfoFullVec_t getVisualisationData();
+    VisualizationDataInfoVec_t getVisualisationData();
 
     void finalize();
 

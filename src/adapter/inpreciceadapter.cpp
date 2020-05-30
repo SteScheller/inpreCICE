@@ -13,24 +13,30 @@ using json = nlohmann::json;
 
 
 
+//std::ostream& inpreciceadapter::operator<<( std::ostream& os, const VisualizationDataInfo& info )
+//{
+//  os << "  Mesh name: "  << info.meshName << "\n"
+//     << "  Data Name: " << info.dataName << std::endl;
+//  return os;
+//}
+
+
 std::ostream& inpreciceadapter::operator<<( std::ostream& os, const VisualizationDataInfo& info )
 {
-  os << "  Mesh name: "  << info.meshName << "\n"
-     << "  Data Name: " << info.dataName << std::endl;
-  return os;
-}
-
-
-std::ostream& inpreciceadapter::operator<<( std::ostream& os, const VisualizationDataInfoFull& info )
-{
-  os << "  Mesh id: "   << info.meshId << "\n"
+  os << "  Mesh id: "   << info.meshID << "\n"
      << "  Mesh name: "  << info.meshName << "\n"
      << "  Mesh dim: " << info.gridDimension[0] << " x " << info.gridDimension[1] << "\n"
-     << "  Data id: "   << info.dataId << "\n"
-     << "  Data Name: " << info.dataName << "\n"
      << "  #Vertices: " << info.vertexIDs.size() << "\n"
-     << "  Buffer size: " << info.buffer.size() << "\n"
+//     << "  Buffer size: " << info.buffers.size() << "\n"
      << std::endl;
+
+  os << "Data names:" << std::endl;
+  assert( info.dataIDs.size() == info.dataNames.size() );
+  for (size_t i = 0; i < info.dataIDs.size(); ++i) {
+    os << info.dataNames[i] << "(ID: " << info.dataIDs[i] << ")" << "\n";
+  }
+  os << std::endl;
+
   return os;
 }
 
@@ -153,34 +159,131 @@ InpreciceAdapter::InpreciceAdapter(const std::string& solverName,
 //  preciceIsInitialized_ = true;
 //}
 
-void InpreciceAdapter::initialize(const std::string& meshFilePath,
-                                  const VisualizationDataInfoVec_t& visInfoVec )
+//void InpreciceAdapter::initialize(const std::string& meshFilePath,
+//                                  const VisualizationDataInfoVec_t& visInfoVec )
+//{
+//  std::ifstream fs;
+//  fs.open(meshFilePath.c_str(), std::ofstream::in);
+//  json conf;
+//  fs >> conf;
+
+//  {
+//    visInfoData_.resize( visInfoVec.size() );
+//    size_t i = 0;
+//    for (const auto& visInfo: visInfoVec )
+//    {
+//      visInfoData_[i].meshName = visInfo.meshName;
+//      visInfoData_[i].dataName = visInfo.dataName;
+//    }
+//  }
+
+//  for (auto& visInfo: visInfoData_ )
+//  {
+//    const std::string& meshName = visInfo.meshName;
+//    visInfo.meshId = interface_->getMeshID( meshName );
+//    auto& gridDimension = visInfo.gridDimension;
+//    gridDimension = conf[meshName]["gridDimensions"].get<gridDimension_t>();
+
+//    const std::size_t numPoints = visInfo.gridDimension[0] * visInfo.gridDimension[1];
+//    visInfo.vertexIDs.resize(numPoints);
+//    visInfo.buffer.resize( boost::extents[gridDimension[0]][gridDimension[1]] );
+
+//    boost::multi_array<double, 2> gridPoints(boost::extents[numPoints][3]);
+//    for (size_t idx = 0; idx < numPoints; ++idx)
+//    {
+//      gridPoints[idx][0] =
+//          conf[meshName]["vertices"][idx]["pos"].get<std::array<float, 3>>()[0];
+//      gridPoints[idx][1] =
+//          conf[meshName]["vertices"][idx]["pos"].get<std::array<float, 3>>()[1];
+//      gridPoints[idx][2] =
+//          conf[meshName]["vertices"][idx]["pos"].get<std::array<float, 3>>()[2];
+//    }
+
+//    interface_->setMeshVertices(
+//        visInfo.meshId, (int)numPoints, gridPoints.data(), visInfo.vertexIDs.data());
+
+//    assert( visInfo.buffer.size() == visInfo.vertexIDs.size() );
+//    assert( visInfo.buffer.size() == numPoints );
+//  }
+
+//  fs.close();
+
+
+
+//  timeStepSize_ = interface_->initialize();
+//  assert( timeStepSize_ > 0. );
+
+//  interface_->initializeData();
+//  preciceIsInitialized_ = true;
+//}
+
+
+void InpreciceAdapter::initialize(const std::string& meshFilePath )
 {
   std::ifstream fs;
   fs.open(meshFilePath.c_str(), std::ofstream::in);
   json conf;
   fs >> conf;
 
+  std::cout << conf.size() << std::endl;
+
+//  std::for_each( conf.begin(), conf.end(), [](const std::string& name) { std::cout << name << "\n"; }  );
+//  for (std::size_t i = 0; i < conf.size(); ++i) {
+//    std::cout << conf[i] << std::endl;
+//  }
+//  for (json::iterator it = conf.begin(); it != conf.end(); ++it) {
+////    std::cout << *it << '\n';
+//    std::cout << it->get<std::string>() << '\n';
+//  }
+
+//  std::cout << conf.object() << std::endl;
+//  std::cout << conf.get<json::object_t>() << std::endl;
+
   {
-    visInfoData_.resize( visInfoVec.size() );
+    visInfoData_.resize( conf.get<json::object_t>().size() );
     size_t i = 0;
-    for (const auto& visInfo: visInfoVec )
-    {
-      visInfoData_[i].meshName = visInfo.meshName;
-      visInfoData_[i].dataName = visInfo.dataName;
+    for (const auto& obj : conf.get<json::object_t>()) {
+      const std::string& meshName = obj.first;
+      std::cout << meshName << std::endl;
+      visInfoData_[i].meshName = meshName;
+      visInfoData_[i].meshID = interface_->getMeshID( meshName );
+
+
+      const size_t nDataFields = conf[meshName]["mappingData"].size();
+      visInfoData_[i].buffers.resize( nDataFields );
+
+      auto& dataNames = visInfoData_[i].dataNames;
+      dataNames.reserve( nDataFields );
+
+      auto& dataIDs = visInfoData_[i].dataIDs;
+      dataIDs.reserve( nDataFields );
+
+      for (const auto& dataName: conf[meshName]["mappingData"] ) {
+        const std::string name = dataName;
+        std::cout << name << std::endl;
+        dataNames.push_back( name );
+        dataIDs.push_back( interface_->getDataID( name, visInfoData_[i].meshID ) );
+      }
+      ++i;
     }
   }
+
 
   for (auto& visInfo: visInfoData_ )
   {
     const std::string& meshName = visInfo.meshName;
-    visInfo.meshId = interface_->getMeshID( meshName );
     auto& gridDimension = visInfo.gridDimension;
     gridDimension = conf[meshName]["gridDimensions"].get<gridDimension_t>();
 
     const std::size_t numPoints = visInfo.gridDimension[0] * visInfo.gridDimension[1];
     visInfo.vertexIDs.resize(numPoints);
-    visInfo.buffer.resize( boost::extents[gridDimension[0]][gridDimension[1]] );
+
+//    visInfo.buffer.resize( boost::extents[gridDimension[0]][gridDimension[1]] );
+    std::for_each( visInfo.buffers.begin(), visInfo.buffers.end(), [gridDimension](auto& buffer)
+                  {
+                    buffer.resize( boost::extents[gridDimension[0]][gridDimension[1]] );
+                  }
+                  );
 
     boost::multi_array<double, 2> gridPoints(boost::extents[numPoints][3]);
     for (size_t idx = 0; idx < numPoints; ++idx)
@@ -194,15 +297,59 @@ void InpreciceAdapter::initialize(const std::string& meshFilePath,
     }
 
     interface_->setMeshVertices(
-        visInfo.meshId, (int)numPoints, gridPoints.data(), visInfo.vertexIDs.data());
+        visInfo.meshID, (int)numPoints, gridPoints.data(), visInfo.vertexIDs.data());
 
-    assert( visInfo.buffer.size() == visInfo.vertexIDs.size() );
-    assert( visInfo.buffer.size() == numPoints );
+    assert( visInfo.vertexIDs.size() == numPoints );
   }
 
+
+//  std::cout << conf.begin()->get<std::string>() << std::endl;
+
+//  std::for_each( conf.get<json::object_t>().begin(), conf.get<json::object_t>().end(), [](const auto& it) { std::cout << it.first << "\n"; }  );
+//  std::for_each( conf.get<json::object_t>().begin(), conf.get<json::object_t>().end(), [](const auto& it) { std::cout << it << "\n"; }  );
+//  std::for_each( conf.get<json::object_t>().begin(), conf.get<json::object_t>().end(), [](const auto& it) { std::cout << it.first << "\n"; }  );
+
+
+//  {
+//    visInfoData_.resize( visInfoVec.size() );
+//    size_t i = 0;
+//    for (const auto& visInfo: visInfoVec )
+//    {
+//      visInfoData_[i].meshName = visInfo.meshName;
+//      visInfoData_[i].dataName = visInfo.dataName;
+//    }
+//  }
+
+//  for (auto& visInfo: visInfoData_ )
+//  {
+//    const std::string& meshName = visInfo.meshName;
+//    visInfo.meshId = interface_->getMeshID( meshName );
+//    auto& gridDimension = visInfo.gridDimension;
+//    gridDimension = conf[meshName]["gridDimensions"].get<gridDimension_t>();
+
+//    const std::size_t numPoints = visInfo.gridDimension[0] * visInfo.gridDimension[1];
+//    visInfo.vertexIDs.resize(numPoints);
+//    visInfo.buffer.resize( boost::extents[gridDimension[0]][gridDimension[1]] );
+
+//    boost::multi_array<double, 2> gridPoints(boost::extents[numPoints][3]);
+//    for (size_t idx = 0; idx < numPoints; ++idx)
+//    {
+//      gridPoints[idx][0] =
+//          conf[meshName]["vertices"][idx]["pos"].get<std::array<float, 3>>()[0];
+//      gridPoints[idx][1] =
+//          conf[meshName]["vertices"][idx]["pos"].get<std::array<float, 3>>()[1];
+//      gridPoints[idx][2] =
+//          conf[meshName]["vertices"][idx]["pos"].get<std::array<float, 3>>()[2];
+//    }
+
+//    interface_->setMeshVertices(
+//        visInfo.meshId, (int)numPoints, gridPoints.data(), visInfo.vertexIDs.data());
+
+//    assert( visInfo.buffer.size() == visInfo.vertexIDs.size() );
+//    assert( visInfo.buffer.size() == numPoints );
+//  }
+
   fs.close();
-
-
 
   timeStepSize_ = interface_->initialize();
   assert( timeStepSize_ > 0. );
@@ -223,7 +370,7 @@ void InpreciceAdapter::runCouplingThreaded()
   preciceThread_ = std::thread( &InpreciceAdapter::runCoupling, this, std::ref(visInfoData_), false);
 }
 
-void InpreciceAdapter::runCoupling(VisualizationDataInfoFullVec_t& visInfoDataVec_,
+void InpreciceAdapter::runCoupling(VisualizationDataInfoVec_t& visInfoDataVec_,
                                    bool printData)
 {
   //  if ( interface_->isReadDataAvailable() )
@@ -259,31 +406,34 @@ void InpreciceAdapter::runCoupling(VisualizationDataInfoFullVec_t& visInfoDataVe
   {
     for (auto& visInfo: visInfoDataVec_ )
     {
-      std::lock_guard<std::mutex> guard( dataMutex_ );
-      interface_->readBlockScalarData(visInfo.dataId,
-                                      (int)visInfo.vertexIDs.size(),
-                                      visInfo.vertexIDs.data(),
-                                      visInfo.buffer.data());
+      for (size_t i = 0; i < visInfo.buffers.size(); ++i)
+      {
+        std::lock_guard<std::mutex> guard( dataMutex_ );
+        interface_->readBlockScalarData(visInfo.dataIDs[i],
+                                        static_cast<int>(visInfo.vertexIDs.size()),
+                                        visInfo.vertexIDs.data(),
+                                        visInfo.buffers[i].data());
+      }
     }
 
-    if (printData)
-      if ( interface_->isReadDataAvailable() )
-      {
-        for (auto& visInfo: visInfoData_ )
-        {
-          std::lock_guard<std::mutex> guard( dataMutex_ );
-          interface_->readBlockScalarData(visInfo.dataId,
-                                          (int)visInfo.vertexIDs.size(),
-                                          visInfo.vertexIDs.data(),
-                                          visInfo.buffer.data());
-          for (size_t y=0; y < visInfo.buffer.shape()[1]; ++y)
-          {
-            for (size_t x=0; x < visInfo.buffer.shape()[0]; ++x)
-              std::printf("%.3f ", visInfo.buffer[y][x]);
-            std::cout << std::endl;
-          }
-        }
-      }
+//    if (printData)
+//      if ( interface_->isReadDataAvailable() )
+//      {
+//        for (auto& visInfo: visInfoData_ )
+//        {
+//          std::lock_guard<std::mutex> guard( dataMutex_ );
+//          interface_->readBlockScalarData(visInfo.dataId,
+//                                          (int)visInfo.vertexIDs.size(),
+//                                          visInfo.vertexIDs.data(),
+//                                          visInfo.buffer.data());
+//          for (size_t y=0; y < visInfo.buffer.shape()[1]; ++y)
+//          {
+//            for (size_t x=0; x < visInfo.buffer.shape()[0]; ++x)
+//              std::printf("%.3f ", visInfo.buffer[y][x]);
+//            std::cout << std::endl;
+//          }
+//        }
+//      }
 //      for (size_t y=0; y < concentration_.shape()[1]; ++y)
 //      {
 //        for (size_t x=0; x < concentration_.shape()[0]; ++x)
@@ -309,7 +459,7 @@ void InpreciceAdapter::runCoupling(VisualizationDataInfoFullVec_t& visInfoDataVe
 //  return concentration_;
 //}
 
-VisualizationDataInfoFullVec_t InpreciceAdapter::getVisualisationData()
+VisualizationDataInfoVec_t InpreciceAdapter::getVisualisationData()
 {
   std::lock_guard<std::mutex> guard( dataMutex_ );
   return visInfoData_;
