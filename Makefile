@@ -23,7 +23,7 @@ CXX = g++
 LINKER = ld
 
 CXXFLAGS = $(INCLUDE) -std=c++14 `pkg-config --cflags glfw3` -fopenmp
-CXXFLAGS += -Wall -Wextra
+CXXFLAGS += -Wall -Wextra -MMD
 DEBUG_CXXFLAGS = -DDEBUG -g -Og
 RELEASE_CXXFLAGS = -DRELEASE -O3
 
