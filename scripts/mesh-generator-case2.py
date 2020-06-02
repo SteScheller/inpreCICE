@@ -126,12 +126,12 @@ if __name__ == '__main__':
     gridOptions.append( VisualizationGridOptions( id=1, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[3, 0, 3], x0=[0., 0.5, 0.], x1=[1., 0.5, 1.] ) )
     gridOptions.append( VisualizationGridOptions( id=2, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[3, 3, 0], x0=[0., 0., 0.5], x1=[1., 1., .5] ) )
     
-    gridOptions.append( VisualizationGridOptions( id=3, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[0, 3, 3], x0=[0.75, 0.5, 0.5], x1=[0.75, 1.0, 1.0] ) )
-    gridOptions.append( VisualizationGridOptions( id=4, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[3, 0, 3], x0=[0.5, 0.75, 0.5], x1=[1.0, 0.75, 1.] ) )
-    gridOptions.append( VisualizationGridOptions( id=5, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[3, 3, 0], x0=[0.5, 0.5, 0.75], x1=[1., 1., .75] ) )
+    gridOptions.append( VisualizationGridOptions( id=3, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[0, 4, 4], x0=[0.75, 0.5, 0.5], x1=[0.75, 1.0, 1.0] ) )
+    gridOptions.append( VisualizationGridOptions( id=5, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[4, 0, 4], x0=[0.5, 0.75, 0.5], x1=[1.0, 0.75, 1.] ) )
+    gridOptions.append( VisualizationGridOptions( id=4, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[4, 4, 0], x0=[0.5, 0.5, 0.75], x1=[1., 1., .75] ) )
     
-    gridOptions.append( VisualizationGridOptions( id=6, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[0, 3, 3], x0=[0.625, 0.5, 0.5], x1=[0.625, 0.75, 0.75] ) )
-    gridOptions.append( VisualizationGridOptions( id=7, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[3, 0, 3], x0=[0.5, 0.625, 0.5], x1=[.75, 0.625, .75] ) )
+    gridOptions.append( VisualizationGridOptions( id=7, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[0, 3, 3], x0=[0.625, 0.5, 0.5], x1=[0.625, 0.75, 0.75] ) )
+    gridOptions.append( VisualizationGridOptions( id=6, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[3, 0, 3], x0=[0.5, 0.625, 0.5], x1=[.75, 0.625, .75] ) )
     gridOptions.append( VisualizationGridOptions( id=8, mappingData=['Concentration'], gridNumDimensions=2, posNumDimensions=3, gridDimensions=[3, 3, 0], x0=[0.5, 0.5, 0.625], x1=[.75, .75, .625] ) )
     
     
