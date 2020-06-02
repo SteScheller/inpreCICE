@@ -704,12 +704,12 @@ void draw::Renderer::cursorPosition_cb(
         glm::vec3 vertical = glm::vec3(0.f, 1.f, 0.f);
         pThis->m_cameraPosition +=
             static_cast<float>(
-                dx * pThis->m_cameraTranslationSpeed) * horizontal +
+                -dx * pThis->m_cameraTranslationSpeed) * horizontal +
             static_cast<float>(
                 dy * pThis->m_cameraTranslationSpeed) * vertical;
         pThis->m_cameraLookAt +=
             static_cast<float>(
-                dx * pThis->m_cameraTranslationSpeed) * horizontal +
+                -dx * pThis->m_cameraTranslationSpeed) * horizontal +
             static_cast<float>(
                 dy * pThis->m_cameraTranslationSpeed) * vertical;
     }
