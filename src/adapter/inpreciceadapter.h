@@ -128,7 +128,7 @@ class InpreciceAdapter
     const boost::multi_array<double, 2>& getPressureVector();
     const boost::multi_array<double, 2>& getConcentrationVector();
 
-    VisualizationDataInfoVec_t getVisualisationData();
+    const VisualizationDataInfoVec_t& getVisualisationData();
 
     void finalize();
 

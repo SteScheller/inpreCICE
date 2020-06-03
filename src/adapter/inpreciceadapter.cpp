@@ -402,7 +402,8 @@ void InpreciceAdapter::runCoupling(VisualizationDataInfoVec_t& visInfoDataVec_,
 //    }
 //  }
 
-  do
+
+  while(interface_->isCouplingOngoing())
   {
     for (auto& visInfo: visInfoDataVec_ )
     {
@@ -443,7 +444,7 @@ void InpreciceAdapter::runCoupling(VisualizationDataInfoVec_t& visInfoDataVec_,
 
     const double preciceDt = interface_->advance(timeStepSize_);
     timeStepSize_ = std::max( timeStepSize_, preciceDt );
-  } while(interface_->isCouplingOngoing());
+  }
 }
 
 
@@ -459,7 +460,7 @@ void InpreciceAdapter::runCoupling(VisualizationDataInfoVec_t& visInfoDataVec_,
 //  return concentration_;
 //}
 
-VisualizationDataInfoVec_t InpreciceAdapter::getVisualisationData()
+const VisualizationDataInfoVec_t& InpreciceAdapter::getVisualisationData()
 {
   std::lock_guard<std::mutex> guard( dataMutex_ );
   return visInfoData_;
