@@ -45,7 +45,8 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    inpreciceadapter::InpreciceAdapter interface( "Visus", "precice-config.xml", 0, 1 );
+    inpreciceadapter::InpreciceAdapter interface(
+        "Visus", "precice-config.xml", 0, 1 );
 
     interface.initialize(meshFile);
 
@@ -58,10 +59,18 @@ int main(int argc, char *argv[])
     while(run)
     {
       {
-        const inpreciceadapter::VisualizationDataInfoVec_t visData = interface.getVisualisationData();
-        const draw::Renderer::fractureDataArray_t dataArray =
-            {visData[0].buffers[0], visData[1].buffers[0], visData[2].buffers[0], visData[3].buffers[0],
-             visData[4].buffers[0], visData[5].buffers[0], visData[6].buffers[0], visData[7].buffers[0], visData[8].buffers[0]};
+        const inpreciceadapter::VisualizationDataInfoVec_t visData =
+            interface.getVisualisationData();
+        const draw::Renderer::fractureDataArray_t dataArray = {
+            visData[0].buffers[0],
+            visData[1].buffers[0],
+            visData[2].buffers[0],
+            visData[3].buffers[0],
+            visData[4].buffers[0],
+            visData[5].buffers[0],
+            visData[6].buffers[0],
+            visData[7].buffers[0],
+            visData[8].buffers[0]};
 
         if (EXIT_FAILURE == renderer.drawFractureNetwork(dataArray))
         {

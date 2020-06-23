@@ -15,6 +15,7 @@
 
 #include "draw.hpp"
 #include "viridis.hpp"
+#include "smoothcoolwarm.hpp"
 #include "shader.hpp"
 
 #include "../util/util.hpp"
@@ -41,7 +42,9 @@ draw::Renderer::Renderer() :
     // common visualization parameters
     m_cmClipMin(0.f),
     m_cmClipMax(1.f),
-    m_isovalueInterval(0.05f),
+    m_cmSelect(0),
+    m_isovalueInterval(0.1f),
+    m_isolineColor({0.f, 0.f, 0.f}),
     // fracture network geometry
     m_fractureNetwork{
         false, false, false, false, false, false, false, false, false},
@@ -66,6 +69,7 @@ draw::Renderer::Renderer() :
     // common rendering objects
     m_framebuffer(),
     m_viridisMap(),
+    m_smoothcoolwarmMap(),
     m_windowShader(),
     m_fractureShader(),
     m_isolineShader(),
@@ -159,17 +163,15 @@ int draw::Renderer::initialize()
 
     const float pi = 3.14159f;
     const glm::mat4 r1 = glm::rotate(
-            glm::mat4(1.f), 0.5f * pi, glm::vec3(0.f, 1.f, 0.f));
+            glm::mat4(1.f), -0.5f * pi, glm::vec3(0.f, 1.f, 0.f));
     const glm::mat4 r2 = glm::rotate(
             glm::mat4(1.f), 0.5f * pi, glm::vec3(1.f, 0.f, 0.f));
-    const glm::mat4 r3 = glm::rotate(
-            glm::mat4(1.f), -0.5f * pi, glm::vec3(0.f, 1.f, 0.f));
 
     const glm::mat4 t1 = glm::translate(glm::mat4(1.f), glm::vec3(0.5f));
     const glm::mat4 t2 = glm::translate(glm::mat4(1.f), glm::vec3(0.75f));
     const glm::mat4 t3 = glm::translate(glm::mat4(1.f), glm::vec3(0.625f));
 
-    m_fractureModelMxs[0] = t1 * r3;
+    m_fractureModelMxs[0] = t1 * r1;
     m_fractureModelMxs[1] = t1 * r2;
     m_fractureModelMxs[2] = t1;
     m_fractureModelMxs[3] = t2 * s1 * r1;
@@ -205,6 +207,16 @@ int draw::Renderer::initialize()
             128,
             1,
             static_cast<void const *>(&VIRIDIS_FLOAT_RGB_128[0]));
+    m_smoothcoolwarmMap = util::texture::Texture2D(
+            GL_RGB,
+            GL_RGB,
+            0,
+            GL_FLOAT,
+            GL_LINEAR,
+            GL_CLAMP_TO_EDGE,
+            128,
+            1,
+            static_cast<void const *>(&SMOOTHCOOLWARM_FLOAT_RGB_128[0]));
 
     //-------------------------------------------------------------------------
     // framebuffer objects for deferred shading
@@ -284,7 +296,10 @@ int draw::Renderer::drawSingleFracture(
     m_fractureShader.setInt("sampleTex", 0);
 
     glActiveTexture(GL_TEXTURE1);
-    m_viridisMap.bind();
+    if (m_cmSelect == 0)
+        m_smoothcoolwarmMap.bind();
+    else
+        m_viridisMap.bind();
     m_fractureShader.setInt("tfTex", 1);
 
     m_windowQuad.draw();
@@ -305,9 +320,7 @@ int draw::Renderer::drawSingleFracture(
             util::extractIsolines(dataTexture, isovalue);
         glm::vec4 color = glm::vec4(
                 glm::vec3(
-                    1.f,
-                    1.f - isovalue * 100.f,
-                    isovalue * 100.f),
+                    m_isolineColor[0], m_isolineColor[1], m_isolineColor[2]),
                 1.f);
         m_isolineShader.setVec4("linecolor", color);
 
@@ -392,7 +405,10 @@ int draw::Renderer::drawFractureNetwork(
         m_fractureShader.setInt("sampleTex", 0);
 
         glActiveTexture(GL_TEXTURE1);
-        m_viridisMap.bind();
+        if (m_cmSelect == 0)
+            m_smoothcoolwarmMap.bind();
+        else
+            m_viridisMap.bind();
         m_fractureShader.setInt("tfTex", 1);
 
         m_windowQuad.draw();
@@ -402,21 +418,21 @@ int draw::Renderer::drawFractureNetwork(
                 0.f, 2.f / (dataTexture.shape()[1] -1.f), -1.0f,
                 0.f, 0.f, 1.f));
 
-        glLineWidth(10.f);
+        glLineWidth(2.f);
         m_isolineShader.use();
         m_isolineShader.setMat3("pvmMx", pvmMx);
         for (
-                float isovalue = 1e-3f;
-                isovalue < 1e-2f;
+                float isovalue = m_cmClipMin;
+                isovalue < m_cmClipMax;
                 isovalue += m_isovalueInterval)
         {
             std::vector<util::geometry::Line2D> isolines =
                 util::extractIsolines(dataTexture, isovalue);
             glm::vec4 color = glm::vec4(
                     glm::vec3(
-                        1.f,
-                        1.f - isovalue * 100.f,
-                        isovalue * 100.f),
+                        m_isolineColor[0],
+                        m_isolineColor[1],
+                        m_isolineColor[2]),
                     1.f);
             m_isolineShader.setVec4("linecolor", color);
 
@@ -595,6 +611,9 @@ void draw::Renderer::renderImgui(void)
     {
         ImGui::DragFloatRange2(
             "Transfer function interval", &m_cmClipMin, &m_cmClipMax, 0.001f);
+        ImGui::Text("Select color map:");
+        ImGui::RadioButton("coolwarm", &m_cmSelect, 0); ImGui::SameLine();
+        ImGui::RadioButton("viridis", &m_cmSelect, 1);
         ImGui::DragFloat(
             "Isoline interval",
             &m_isovalueInterval,
@@ -602,6 +621,7 @@ void draw::Renderer::renderImgui(void)
             1e-5f,
             0.1f,
             "%.5f");
+        ImGui::ColorEdit3("Isoline color", m_isolineColor.data());
         ImGui::Separator();
         ImGui::Checkbox("Demo Window", &m_showDemoWindow);
         ImGui::Separator();

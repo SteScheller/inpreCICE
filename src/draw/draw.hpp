@@ -64,8 +64,8 @@ namespace draw
          * \return EXIT_SUCCESS true as long as the window is still open,
          *         false when it was closed
          *
-         * Draws the scalar data values into a window spanning quad with
-         * the viridis colormap and isolines.
+         * Draws the scalar data values into a window spanning quad using a
+         * color map and isolines.
          */
         using fractureData_t = boost::multi_array<double, 2>;
         int drawSingleFracture(const fractureData_t &data);
@@ -94,9 +94,12 @@ namespace draw
         // clipping values for color mapping
         float m_cmClipMin;
         float m_cmClipMax;
+        int m_cmSelect;
+
 
         // interval between isolines
         float m_isovalueInterval;
+        std::array<float, 3> m_isolineColor;
 
         // fracture network geometry
         std::array<util::geometry::Quad, 9> m_fractureNetwork;
@@ -125,6 +128,7 @@ namespace draw
         // common rendering objects
         util::FramebufferObject m_framebuffer;
         util::texture::Texture2D m_viridisMap;
+        util::texture::Texture2D m_smoothcoolwarmMap;
         Shader m_windowShader;
         Shader m_fractureShader;
         Shader m_isolineShader;
