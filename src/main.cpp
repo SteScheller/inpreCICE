@@ -46,27 +46,7 @@ int main(int argc, char *argv[])
     }
 
     inpreciceadapter::InpreciceAdapter interface( "Visus", "precice-config.xml", 0, 1 );
-    //    interface.configure("precice-config.xml");
-    //    interface.setMeshName("VisusMesh");
-//    {
-//      inpreciceadapter::VisualizationDataInfoVec_t visData(9);
-//      {
-//        using namespace inpreciceadapter;
-//        for (std::size_t i = 0; i < visData.size(); ++i)
-//        {
-//          auto& data = visData[i];
-//          data.dataName = "Concentration" + std::to_string(i);
-//          data.meshName = "VisusMesh" + std::to_string(i);
 
-//          std::cout << data << std::endl;
-//        }
-//      }
-
-//      //interface.setVisualizationMesh(meshFile);
-//      //    interface.setVisualizationMeshes(meshFile, visData );
-
-//      interface.initialize(meshFile, visData);
-//    }
     interface.initialize(meshFile);
 
     // Run precice (runs a thread)
@@ -78,8 +58,6 @@ int main(int argc, char *argv[])
     while(run)
     {
       {
-        //            const draw::Renderer::fractureData_t data =
-        //                interface.getConcentrationVector();
         const inpreciceadapter::VisualizationDataInfoVec_t visData = interface.getVisualisationData();
         const draw::Renderer::fractureDataArray_t dataArray =
             {visData[0].buffers[0], visData[1].buffers[0], visData[2].buffers[0], visData[3].buffers[0],

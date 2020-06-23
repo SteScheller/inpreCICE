@@ -40,8 +40,8 @@ draw::Renderer::Renderer() :
     m_isInitialized(false),
     // common visualization parameters
     m_cmClipMin(0.f),
-    m_cmClipMax(0.01f),
-    m_isovalueInterval(1e-4),
+    m_cmClipMax(1.f),
+    m_isovalueInterval(0.05f),
     // fracture network geometry
     m_fractureNetwork{
         false, false, false, false, false, false, false, false, false},
@@ -162,12 +162,14 @@ int draw::Renderer::initialize()
             glm::mat4(1.f), 0.5f * pi, glm::vec3(0.f, 1.f, 0.f));
     const glm::mat4 r2 = glm::rotate(
             glm::mat4(1.f), 0.5f * pi, glm::vec3(1.f, 0.f, 0.f));
+    const glm::mat4 r3 = glm::rotate(
+            glm::mat4(1.f), -0.5f * pi, glm::vec3(0.f, 1.f, 0.f));
 
     const glm::mat4 t1 = glm::translate(glm::mat4(1.f), glm::vec3(0.5f));
     const glm::mat4 t2 = glm::translate(glm::mat4(1.f), glm::vec3(0.75f));
     const glm::mat4 t3 = glm::translate(glm::mat4(1.f), glm::vec3(0.625f));
 
-    m_fractureModelMxs[0] = t1 * r1;
+    m_fractureModelMxs[0] = t1 * r3;
     m_fractureModelMxs[1] = t1 * r2;
     m_fractureModelMxs[2] = t1;
     m_fractureModelMxs[3] = t2 * s1 * r1;
@@ -295,8 +297,8 @@ int draw::Renderer::drawSingleFracture(
     m_isolineShader.use();
     m_isolineShader.setMat3("pvmMx", pvmMx);
     for (
-            float isovalue = 1e-3f;
-            isovalue < 1e-2f;
+            float isovalue = m_cmClipMin;
+            isovalue < m_cmClipMax;
             isovalue += m_isovalueInterval)
     {
         std::vector<util::geometry::Line2D> isolines =
