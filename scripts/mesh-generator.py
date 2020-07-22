@@ -50,7 +50,8 @@ def generateCase1():
     data = {
             'gridNumDimensions' : 2,
             'posNumDimensions' : 3,
-            'gridDimensions' : [10, 10] }
+            'gridDimensions' : [10, 10],
+            'mappingData' : 'Concentration'}
     vertices, edges = makeRegularPlane3D(
             np.array([5, 5, 77]),
             np.array([90, 0, -54]),
@@ -68,71 +69,72 @@ def generateCase2():
         frac = {
             'gridNumDimensions' : 2,
             'posNumDimensions' : 3,
-            'gridDimensions' : gridDim}
-        data.update({'frac' + str(i) : frac})
+            'gridDimensions' : gridDim,
+            'mappingData' : 'Concentration' + str(i) }
+        data.update({'VisualizationMesh' + str(i) : frac})
 
     vertices, edges = makeRegularPlane3D(
             np.array([0.5, 0, 0]),
             np.array([0, 1, 0]),
             np.array([0, 0, 1]),
             gridDim)
-    data['frac0'].update(vertices=vertices, edges=edges)
+    data['VisualizationMesh0'].update(vertices=vertices, edges=edges)
 
     vertices, edges = makeRegularPlane3D(
             np.array([0, 0.5, 0]),
             np.array([1, 0, 0]),
             np.array([0, 0, 1]),
             gridDim)
-    data['frac1'].update(vertices=vertices, edges=edges)
+    data['VisualizationMesh1'].update(vertices=vertices, edges=edges)
 
     vertices, edges = makeRegularPlane3D(
             np.array([0, 0, 0.5]),
             np.array([1, 0, 0]),
             np.array([0, 1, 0]),
             gridDim)
-    data['frac2'].update(vertices=vertices, edges=edges)
+    data['VisualizationMesh2'].update(vertices=vertices, edges=edges)
 
     vertices, edges = makeRegularPlane3D(
             np.array([0.75, 0.5, 0.5]),
             np.array([0, 0.5, 0]),
             np.array([0, 0, 0.5]),
             gridDim)
-    data['frac3'].update(vertices=vertices, edges=edges)
+    data['VisualizationMesh3'].update(vertices=vertices, edges=edges)
 
     vertices, edges = makeRegularPlane3D(
             np.array([0.5, 0.5, 0.75]),
             np.array([0.5, 0, 0]),
             np.array([0, 0.5, 0]),
             gridDim)
-    data['frac4'].update(vertices=vertices, edges=edges)
+    data['VisualizationMesh4'].update(vertices=vertices, edges=edges)
 
     vertices, edges = makeRegularPlane3D(
             np.array([0.5, 0.75, 0.5]),
             np.array([0.5, 0, 0]),
             np.array([0, 0, 0.5]),
             gridDim)
-    data['frac5'].update(vertices=vertices, edges=edges)
+    data['VisualizationMesh5'].update(vertices=vertices, edges=edges)
 
     vertices, edges = makeRegularPlane3D(
             np.array([0.5, 0.625, 0.5]),
             np.array([0.25, 0, 0]),
             np.array([0, 0, 0.25]),
             gridDim)
-    data['frac6'].update(vertices=vertices, edges=edges)
+    data['VisualizationMesh6'].update(vertices=vertices, edges=edges)
 
     vertices, edges = makeRegularPlane3D(
             np.array([0.625, 0.5, 0.5]),
             np.array([0, 0.25, 0]),
             np.array([0, 0, 0.25]),
             gridDim)
-    data['frac7'].update(vertices=vertices, edges=edges)
+    data['VisualizationMesh7'].update(vertices=vertices, edges=edges)
 
     vertices, edges = makeRegularPlane3D(
             np.array([0.5, 0.5, 0.625]),
             np.array([0.25, 0, 0]),
             np.array([0, 0.25, 0]),
             gridDim)
-    data['frac8'].update(vertices=vertices, edges=edges)
+    data['VisualizationMesh8'].update(vertices=vertices, edges=edges)
 
     return data
 
