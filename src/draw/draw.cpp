@@ -163,7 +163,7 @@ int draw::Renderer::initialize()
 
     const float pi = 3.14159f;
     const glm::mat4 r1 = glm::rotate(
-            glm::mat4(1.f), 0.5f * pi, glm::vec3(0.f, 1.f, 0.f));
+            glm::mat4(1.f), -0.5f * pi, glm::vec3(0.f, 1.f, 0.f));
     const glm::mat4 r2 = glm::rotate(
             glm::mat4(1.f), 0.5f * pi, glm::vec3(1.f, 0.f, 0.f));
 

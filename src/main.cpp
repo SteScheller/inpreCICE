@@ -165,6 +165,9 @@ int applyProgramOptions(int argc, char *argv[], ProgramSettings &settings)
 
         if (vm.count("help"))
         {
+            std::cout <<
+                "Usage: inpreCICE [options] PRECICE-CONFIG-PATH CASE-NUMBER\n"
+                << std::endl;
             std::cout << generic << std::endl;
             exit(EXIT_SUCCESS);
         }
