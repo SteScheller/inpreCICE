@@ -17,10 +17,8 @@ OBJS = $(addsuffix .o, $(basename $(SOURCES)))
 INCLUDE = -I./src -I./src/draw
 INCLUDE += -I./include -I./lib/gl3w -I./lib/imgui -I./lib/nlohmann
 
-LDINCLUDE = -L/lib/openmpi
-
-CC = mpicc
-CXX = mpic++
+CC = cc
+CXX = g++
 LINKER = ld
 
 CXXFLAGS = $(INCLUDE) -std=c++14 `pkg-config --cflags glfw3` -fopenmp
@@ -33,17 +31,10 @@ CFLAGS += -Wall -Wextra
 DEBUG_CFLAGS = -DDEBUG -g -Og
 RELEASE_CFLAGS = -DRELEASE -O3
 
-
-LDFLAGS = $(LDINCLUDE) -Wl,-rpath
-LDFLAGS += -lGL `pkg-config --static --libs glfw3` -fopenmp
-LDFLAGS += -lboost_system -lboost_filesystem -lboost_regex 
-LDFLAGS += -lboost_program_options -lboost_iostreams -lboost_thread
-LDFLAGS += -lboost_log_setup -lboost_log 
+LDFLAGS = -lGL `pkg-config --static --libs glfw3` -fopenmp
+LDFLAGS += -lboost_program_options -lboost_system -lboost_iostreams
 LDFLAGS += -lfreeimage
 LDFLAGS += -lprecice
-LDFLAGS += -lmpi
-LDFLAGS += -lpthread
-LDFLAGS += -lxml2
 
 .PHONY: clean start all
 
