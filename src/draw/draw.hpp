@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 
 #include "shader.hpp"
-#include "../util/util.hpp"
+#include "util/util.hpp"
 
 #include <boost/multi_array.hpp>
 

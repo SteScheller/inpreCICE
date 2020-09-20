@@ -5,7 +5,7 @@ BUILD_DIR = build
 
 SOURCES = src/main.cpp
 SOURCES += src/draw/draw.cpp
-SOURCES += src/util/util.cpp src/util/texture.cpp src/util/geometry.cpp
+SOURCES += src/draw/util/util.cpp src/draw/util/texture.cpp src/draw/util/geometry.cpp
 SOURCES += lib/imgui/imgui_impl_glfw.cpp lib/imgui/imgui_impl_opengl3.cpp
 SOURCES += lib/imgui/imgui.cpp lib/imgui/imgui_demo.cpp
 SOURCES += lib/imgui/imgui_draw.cpp lib/imgui/imgui_widgets.cpp

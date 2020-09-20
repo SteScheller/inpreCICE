@@ -18,7 +18,7 @@
 #include "smoothcoolwarm.hpp"
 #include "shader.hpp"
 
-#include "../util/util.hpp"
+#include "util/util.hpp"
 
 #define REQUIRED_OGL_VERSION_MAJOR 3
 #define REQUIRED_OGL_VERSION_MINOR 3
